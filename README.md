@@ -17,6 +17,7 @@
   <a href="#target-stacks">Target stacks</a> ·
   <a href="#project-files">Project files</a> ·
   <a href="#status-and-roadmap">Status and roadmap</a> ·
+  <a href="#mvp-win-condition">MVP win condition</a> ·
   <a href="#docs">Docs</a> ·
   <a href="#contributing">Contributing</a> ·
   <a href="#license">License</a>
@@ -130,19 +131,19 @@ Planned stdio config for any MCP client (not implemented):
 
 ## Target stacks
 
-You pick (a) the UI framework, (b) the build tool, (c) styling, and optionally your own component library or tokens, and (d) the deploy target. The first adapter (the reference adapter) is plain TS plus Vite plus static. The second is React plus Vite. Later options are listed, not built, in the first adapter pass. Deploy config is generated. The tool does not deploy, and it does not handle account auth.
+You pick (a) the UI framework, (b) the build tool, (c) styling, and optionally your own component library or tokens, and (d) the deploy target. The MVP adapter (the reference adapter) is plain HTML/CSS/TS plus Vite plus static. React, Tailwind, Rust, and deploy configs are post-MVP. The tool does not deploy, and it does not handle account auth.
 
 | Choice | Option | Status |
 | --- | --- | --- |
 | Framework | Plain HTML/CSS/TS | First (reference adapter, with Vite and static) |
-| Framework | React | First (with Vite) |
-| Framework | Vue, Svelte, Leptos, Yew | Planned |
+| Framework | React | Post-MVP (with Vite) |
+| Framework | Vue, Svelte, Leptos, Yew | Planned, post-MVP |
 | Build tool | Vite | First |
-| Build tool | Next.js, Astro, Trunk | Planned |
+| Build tool | Next.js, Astro, Trunk | Planned, post-MVP |
 | Styling | Plain CSS | First |
-| Styling | CSS modules, Tailwind, or your own component library or tokens | Planned |
+| Styling | CSS modules, Tailwind, or your own component library or tokens | Planned, post-MVP |
 | Deploy target | Static | First |
-| Deploy target | Vercel (`vercel.json`) or Cloudflare Pages/Workers (`wrangler.toml`) | First (config only; nothing is deployed) |
+| Deploy target | Vercel (`vercel.json`) or Cloudflare Pages/Workers (`wrangler.toml`) | Post-MVP (config only; nothing is deployed) |
 
 ## Project files
 
@@ -156,15 +157,26 @@ A run is planned to write this layout. See [architecture](docs/architecture.md#p
 | `checks/` | Scores, mismatch regions, and score history |
 | `out/` | The scaffolded project, including deploy config when requested |
 
+## MVP win condition
+
+The MVP is won only when all four of these hold. Details are in [decision 005](docs/decisions/005-mvp-win-condition.md).
+
+1. On the same fixed Design2Code slice, with the same model, the single-section loop beats screenshot-to-code on the combined metric. Results and scripts are committed so anyone can rerun them.
+2. The ASES full-page example runs end to end: segment, review overlay, build every section in plain HTML/CSS/TS with Vite, assemble, and a page-level score is recorded.
+3. The same run works from both the CLI and an MCP client, with JSON in and out.
+4. No image-as-background tricks, and each run stays under a set spend cap and round limit. Those values are TBD and will be set in [issue #1](https://github.com/Troy-LL/trace-anything/issues/1).
+
+React, Tailwind, Rust, deploy configs, and editor plugins are post-MVP.
+
 ## Status and roadmap
 
-Spec stage / pre-alpha. Nothing is implemented yet. The first work is a baseline, then a single-section loop, then adapters, a harness-neutral CLI and MCP server, and full-page segment and assemble. Issues are the specs.
+Spec stage / pre-alpha. Nothing is implemented yet. The first work is issues #1, #2, #4, and #6, which together must satisfy the [MVP win condition](#mvp-win-condition). Issues are the specs.
 
 | Issue | Title | Notes |
 | --- | --- | --- |
 | [#1](https://github.com/Troy-LL/trace-anything/issues/1) | Baseline: screenshot-to-code on a Design2Code slice | First. Measurement only. |
 | [#2](https://github.com/Troy-LL/trace-anything/issues/2) | v0.1: single-section image to component loop | Depends on #1. |
-| [#3](https://github.com/Troy-LL/trace-anything/issues/3) | Target stack options: framework, build tool, styling, deploy target | Depends on #2. |
+| [#3](https://github.com/Troy-LL/trace-anything/issues/3) | Target stack options: framework, build tool, styling, deploy target | Depends on #2. Extra stacks are post-MVP. |
 | [#4](https://github.com/Troy-LL/trace-anything/issues/4) | Harness-neutral interface: CLI and MCP server | Depends on #2. |
 | [#5](https://github.com/Troy-LL/trace-anything/pull/5) | Add product spec and docs | Documentation pull request, not a product issue. |
 | [#6](https://github.com/Troy-LL/trace-anything/issues/6) | Full-page input: segment, annotate, assemble | Depends on #2. |
@@ -180,6 +192,7 @@ Limits that still hold: the generation unit is one section, not a whole page in 
 - [002: Harness-neutral interface](docs/decisions/002-harness-neutral-interface.md)
 - [003: Section first](docs/decisions/003-section-first.md)
 - [004: Full-page input through segment and assemble](docs/decisions/004-full-page-segment-and-assemble.md)
+- [005: MVP win condition](docs/decisions/005-mvp-win-condition.md)
 
 ## Contributing
 

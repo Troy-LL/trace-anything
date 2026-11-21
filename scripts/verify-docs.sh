@@ -15,6 +15,7 @@ required=(
   docs/decisions/002-harness-neutral-interface.md
   docs/decisions/003-section-first.md
   docs/decisions/004-full-page-segment-and-assemble.md
+  docs/decisions/005-mvp-win-condition.md
   scripts/verify-docs.sh
 )
 

@@ -10,6 +10,7 @@ Load this file. Then at most two others this turn, or three if this turn needs `
 - Harness surface: `docs/decisions/002-harness-neutral-interface.md` when an IDE-specific core or a plugin-only interface looks useful; read before adding editor code
 - Section scope: `docs/decisions/003-section-first.md` when generating a whole page in one shot looks useful; read before widening input past one section
 - Page segment: `docs/decisions/004-full-page-segment-and-assemble.md` when feeding a whole-page image straight into generate looks useful; read before skipping `segment` or treating a page as one section
+- MVP win: `docs/decisions/005-mvp-win-condition.md` when calling the product done, widening MVP to React, deploy configs, or plugins, or skipping the public baseline looks useful; read before changing scope
 
 Verify the docs with `bash scripts/verify-docs.sh`. Do not put IDE-specific code in the core. Do not deploy; only generate deploy config. Do not skip the intermediate format. Do not add `CONTEXT.md` or `GLOSSARY.md`.
 

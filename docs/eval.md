@@ -29,3 +29,21 @@ A small, hand-labeled set of full-page screenshots is the gold for `segment`. Se
 When the runner exists, the gold command is `trace eval`. It writes dated score files under `evals/`. A rerun with the same seed and slice must reproduce the committed table. The sample floor is the fixed baseline slice (about 50 pages), that slice cropped to sections for v0.1, and the hand-labeled full-page set for segmentation and page-level scores.
 
 Until `trace eval` exists, baseline scripts committed for the issue #1 run are the gold command, and they write to the same `evals/` directory.
+
+## Scoring honesty
+
+**Stance.** Image-as-background, and any embedding of the source image in the output, are banned. Layout, text, and color are scored separately, as well as the combined metric. A close-looking screenshot that cheats does not count. See [decision 005](decisions/005-mvp-win-condition.md).
+
+**Open questions.** How is an embedded source image detected automatically? Are the official Design2Code metrics enough, or is a dedicated cheat check required?
+
+## Cost and speed
+
+**Stance.** Every scored product run stays under a spend cap and a round limit. Those values are TBD and will be set in issue #1. They are separate from the about $10 cap on the baseline measurement. Repeated extract and score work is cached. Reruns use a fixed seed so the same slice reproduces the same table.
+
+**Open questions.** Is the spend cap per section, per page, or per eval slice? What is cached: specs, renders, or model calls?
+
+## Proof
+
+**Stance.** Proof is a public comparison on the Design2Code slice, a recorded end-to-end run of the ASES full-page example, and before/after examples we have the rights to publish. No score claims until results and scripts are committed.
+
+**Open questions.** Where do demo videos and before/after images live without shipping third-party logos? How many published examples besides ASES?

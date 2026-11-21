@@ -6,7 +6,7 @@ Trace Anything turns a section image, or a full-page image isolated into section
 
 - **Library.** Editor-neutral core. It owns segment, extract, generate, render, score, assemble, and the full loop. No IDE-specific code lives here.
 - **CLI.** The `trace` binary calls the library. JSON in, JSON out.
-- **MCP server.** The same library operations, over stdio by default, and optionally over HTTP. Any MCP-capable harness can call it.
+- **MCP server.** The same library operations, over stdio by default, and optionally over HTTP. Any MCP-capable harness can call it. It never runs arbitrary commands; it only exposes the documented tools.
 - **Renderer.** Playwright opens the adapter's built output at the source image's exact width and captures a screenshot.
 - **Adapters.** Each adapter turns the same intermediate component description into a concrete project (framework, build tool, styling, deploy config).
 - **Eval runner.** Scores a fixed slice and writes dated results under `evals/`. See [eval](eval.md).
@@ -15,7 +15,7 @@ Editor integrations, if they exist later, are thin wrappers around the CLI or th
 
 ## Data flow
 
-If the input is a full-page image, `segment` runs first:
+If the input is a full-page image, `segment` runs first. Very tall pages are tiled, then stitched, so segmentation and scoring stay within a documented size limit once that limit is set.
 
 1. Detect section boundaries, horizontal bands first, then nested blocks.
 2. Crop each section and assign a semantic label (nav/header, hero, features, testimonials, pricing, CTA, footer, other) with a confidence.
@@ -35,7 +35,13 @@ Each cropped section then follows the loop below. After every section has been s
 7. Mark mismatched regions and feed them back into generate.
 8. Repeat from generate until the combined score clears a documented threshold, or a maximum of N rounds.
 
-The scoring loop does not change per stack. Only the adapter's emitted code changes.
+The scoring loop does not change per stack. Only the adapter's emitted code changes. Output must not embed the source image, including as a CSS background. Repeated extract and score work is cached. Reruns are seeded.
+
+## Models
+
+**Stance.** Each step may use a different vision or generation model. Users can bring their own key or model. There is no single-vendor lock-in. The model name and version used at each step are recorded in the score history so a run can be repeated.
+
+**Open questions.** What is the default model for each step in the MVP? How is a user-supplied endpoint configured?
 
 ## Project files
 
@@ -51,7 +57,7 @@ Dated eval scores still live under `evals/`. See [eval](eval.md).
 
 ## Adapters
 
-The adapter interface is documented in code when adapters ship. The first adapter (the reference adapter) is plain TS plus Vite plus static. The second is React plus Vite. Later adapters may include Vue, Svelte, Rust options such as Leptos or Yew, and build tools such as Next.js, Astro, or Trunk. Those are listed, not built, in the first adapter pass.
+The adapter interface is documented in code when adapters ship. The MVP adapter (the reference adapter) is plain HTML/CSS/TS plus Vite plus static. React, Tailwind, Rust options, other build tools, and deploy configs are post-MVP. See [decision 005](decisions/005-mvp-win-condition.md).
 
 ## What this system does not do
 
@@ -59,3 +65,6 @@ The adapter interface is documented in code when adapters ship. The first adapte
 - It does not generate a full page in one shot. Full-page input goes through `segment`, the section loop, and assemble.
 - It does not take a multi-page site or Figma input in v0.1.
 - It does not include a graphical product UI in v0.1, and it does not include an interactive GUI editor for annotations.
+- It does not run arbitrary commands through the MCP server or the CLI.
+- It does not embed the source image in the output, including as a background.
+- It does not redistribute third-party logos.

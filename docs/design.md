@@ -77,10 +77,46 @@ Short sample of the annotations file. The bboxes are illustrative of the schema,
 
 ## MCP server
 
-The MCP server exposes the same operations as tools: segment, extract the spec, generate, render, score, the full loop, and assemble. Transport is stdio by default. HTTP is optional.
+The MCP server exposes the same operations as tools: segment, extract the spec, generate, render, score, the full loop, and assemble. Transport is stdio by default. HTTP is optional. The server never runs arbitrary commands; it only exposes those documented tools.
 
-No IDE-specific code belongs in the core. Editor integrations are thin wrappers around these tools and are out of scope for v0.1.
+No IDE-specific code belongs in the core. Editor integrations are thin wrappers around these tools and are out of scope for v0.1, and are post-MVP.
 
 ## Loop behavior
 
-The threshold and N are chosen and written down before an eval run. Each failed pass returns the mismatched regions to generate. If the cap of N is hit, the last output, the score history, and the remaining mismatches are returned. The tool does not deploy, even when it has written `vercel.json`, `wrangler.toml`, or a static setup.
+The threshold and N are chosen and written down before an eval run. Each failed pass returns the mismatched regions to generate. If the cap of N is hit, the last output, the score history, and the remaining mismatches are returned. The tool does not deploy. Deploy config files such as `vercel.json` and `wrangler.toml` are post-MVP.
+
+## Input quality
+
+**Stance.** Accept a section image or a full-page screenshot. Warn or refuse when the picture is too blurry to read text, or so tightly cropped that a section is incomplete. Very tall pages are tiled, then stitched. Dark-mode screenshots are valid input; the tool does not invent a light-mode twin. Size limits will be documented once they are set.
+
+**Open questions.** What is the minimum resolution, and what is the maximum file size? How many tiles, and how is overlap handled? Do we accept a mobile crop of a desktop page?
+
+## What a picture can't show
+
+**Stance.** Hover and open states, animation, responsive behavior, and real link targets are not in a still image. Guess conservative defaults (no hover style unless it is visible, a closed accordion stays closed, a single width, placeholder hrefs) and flag every guess in the intermediate description so a person can edit them.
+
+**Open questions.** Which guesses are flagged vs left as silent defaults? MVP renders at the image's exact width only; when, if ever, is a second width generated?
+
+## Fonts and assets
+
+**Stance.** Match type to the closest free font and record the substitution. Photographs, logos, and icons are cropped from the source or replaced with placeholders. Third-party logos are not redistributed in this repo or in published demos.
+
+**Open questions.** Which free-font catalog is the default? When is a crop acceptable vs a placeholder? How is the ASES example demonstrated without publishing partner logos?
+
+## Output quality beyond looks
+
+**Stance.** Markup should be accessible: real headings, alt text, a documented contrast bar, clean component boundaries, and design tokens rather than one-off pixel values.
+
+**Open questions.** Which contrast bar is the gate? Are accessibility checks part of the combined score, or a separate gate so the visual score stays honest?
+
+## Safety and legal
+
+**Stance.** The tool is for your own designs, or for inspiration. Cloning someone else's brand for release is not acceptable use. That stance will be stated in the docs for strangers. The MCP server never runs arbitrary commands.
+
+**Open questions.** Does the acceptable-use statement live only in the README, or also as a short legal page? Do we refuse obvious brand-clone prompts, or only document the stance?
+
+## Distribution
+
+**Stance.** A stranger should be able to install the MVP as an npm package or a single binary, with a small config and docs that explain the CLI and the MCP server.
+
+**Open questions.** Which shipping form comes first, npm or a single binary? What is the minimum config file?
