@@ -1,0 +1,31 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Verify docs
+        run: bash scripts/verify-docs.sh
+      - name: Check markdown links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          fail: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: >-
+            --no-progress
+            --accept 200,206,429
+            --timeout 30
+            --max-concurrency 4
+            --exclude-mail
+            '**/*.md'

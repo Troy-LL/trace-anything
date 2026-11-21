@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">Trace Anything concept</title>
+  <desc id="desc">Concept, not real output. A page picture on the left, a rendered component on the right, and a score with a fix loop between them.</desc>
+  <rect width="1280" height="640" fill="#F4F0EA"/>
+
+  <!-- Left card: the picture -->
+  <rect x="80" y="96" width="460" height="428" rx="22" fill="#FFFFFF" stroke="#E6DFD6" stroke-width="1.5"/>
+  <text x="310" y="132" text-anchor="middle" font-family="Inter, 'Noto Sans', sans-serif" font-size="15" font-weight="600" fill="#7A726A" letter-spacing="0.08em">YOUR PICTURE</text>
+  <rect x="112" y="154" width="396" height="336" rx="12" fill="#EFE8DF" stroke="#E0D7CC" stroke-width="1"/>
+  <!-- stylized screenshot -->
+  <rect x="132" y="174" width="356" height="36" rx="6" fill="#D9D0C6"/>
+  <circle cx="150" cy="192" r="5" fill="#C4B8AC"/>
+  <circle cx="168" cy="192" r="5" fill="#C4B8AC"/>
+  <circle cx="186" cy="192" r="5" fill="#C4B8AC"/>
+  <rect x="132" y="222" width="356" height="148" rx="8" fill="#C9B8A4"/>
+  <rect x="156" y="258" width="200" height="14" rx="4" fill="#F4EFE8" opacity="0.85"/>
+  <rect x="156" y="282" width="148" height="10" rx="3" fill="#F4EFE8" opacity="0.6"/>
+  <rect x="132" y="384" width="170" height="86" rx="8" fill="#DDD4C8"/>
+  <rect x="314" y="384" width="174" height="86" rx="8" fill="#DDD4C8"/>
+
+  <!-- Right card: the component -->
+  <rect x="740" y="96" width="460" height="428" rx="22" fill="#FFFFFF" stroke="#E6DFD6" stroke-width="1.5"/>
+  <text x="970" y="132" text-anchor="middle" font-family="Inter, 'Noto Sans', sans-serif" font-size="15" font-weight="600" fill="#7A726A" letter-spacing="0.08em">YOUR COMPONENT</text>
+  <rect x="772" y="154" width="396" height="336" rx="12" fill="#FAFAF8" stroke="#E6DFD6" stroke-width="1"/>
+  <!-- code rail to suggest real markup -->
+  <rect x="772" y="154" width="28" height="336" rx="12" fill="#1F3A36"/>
+  <rect x="786" y="154" width="14" height="336" fill="#1F3A36"/>
+  <rect x="780" y="176" width="12" height="6" rx="1" fill="#9FDED3"/>
+  <rect x="780" y="190" width="12" height="6" rx="1" fill="#9FDED3" opacity="0.45"/>
+  <rect x="780" y="204" width="12" height="6" rx="1" fill="#9FDED3" opacity="0.45"/>
+  <rect x="780" y="218" width="12" height="6" rx="1" fill="#9FDED3"/>
+  <!-- crisp component layout, parallel to the picture -->
+  <rect x="816" y="174" width="332" height="36" rx="6" fill="#E8F3F0"/>
+  <rect x="828" y="186" width="72" height="12" rx="3" fill="#0F766E"/>
+  <rect x="912" y="188" width="48" height="8" rx="2" fill="#9CB8B3"/>
+  <rect x="968" y="188" width="48" height="8" rx="2" fill="#9CB8B3"/>
+  <rect x="816" y="222" width="332" height="148" rx="8" fill="#0F766E"/>
+  <rect x="836" y="258" width="180" height="14" rx="4" fill="#F4F0EA"/>
+  <rect x="836" y="282" width="128" height="10" rx="3" fill="#F4F0EA" opacity="0.7"/>
+  <rect x="816" y="384" width="158" height="86" rx="8" fill="#E8F3F0"/>
+  <rect x="990" y="384" width="158" height="86" rx="8" fill="#E8F3F0"/>
+
+  <!-- Center: score + fix loop -->
+  <rect x="572" y="278" width="136" height="52" rx="26" fill="#1F1A17"/>
+  <text x="640" y="310" text-anchor="middle" font-family="Inter, 'Noto Sans', sans-serif" font-size="16" font-weight="650" fill="#F4F0EA">Score</text>
+  <!-- top arrow: picture to component -->
+  <path d="M540 250 C580 200, 700 200, 740 250" fill="none" stroke="#B45309" stroke-width="2.5" stroke-linecap="round"/>
+  <polygon points="740,250 726,244 726,260" fill="#B45309"/>
+  <!-- bottom arrow: component back to picture (the fix loop) -->
+  <path d="M740 390 C700 440, 580 440, 540 390" fill="none" stroke="#B45309" stroke-width="2.5" stroke-linecap="round"/>
+  <polygon points="540,390 554,384 554,400" fill="#B45309"/>
+  <text x="640" y="208" text-anchor="middle" font-family="Inter, 'Noto Sans', sans-serif" font-size="13" font-weight="600" fill="#B45309" letter-spacing="0.06em">RENDER</text>
+  <text x="640" y="456" text-anchor="middle" font-family="Inter, 'Noto Sans', sans-serif" font-size="13" font-weight="600" fill="#B45309" letter-spacing="0.06em">FIX</text>
+
+  <text x="640" y="580" text-anchor="middle" font-family="Inter, 'Noto Sans', sans-serif" font-size="15" font-weight="500" fill="#8A8279">Concept, not real output</text>
+</svg>
