@@ -1,0 +1,34 @@
+name: Stack request
+description: Ask for another framework, build tool, styling choice, or deploy target.
+title: "[stack] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Extra stacks are tracked in [issue #3](https://github.com/Troy-LL/trace-anything/issues/3). The first version ships plain HTML/CSS/TS with Vite and a static build. React, Tailwind, Rust, and deploy configs come after that.
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Layer
+      options:
+        - Framework
+        - Build tool
+        - Styling
+        - Deploy target
+    validations:
+      required: true
+  - type: input
+    id: choice
+    attributes:
+      label: What you want
+      description: For example Vue, Astro, Tailwind, or Cloudflare Workers.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters
+      description: Who would use it, and what the first version would miss without it.
+    validations:
+      required: true

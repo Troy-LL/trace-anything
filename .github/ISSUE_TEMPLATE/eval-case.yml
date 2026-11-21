@@ -1,0 +1,34 @@
+name: Eval case
+description: Suggest a page, section, or scoring check for the eval set.
+title: "[eval] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The baseline set is [issue #1](https://github.com/Troy-LL/trace-anything/issues/1). The full-page hand-labeled set is [issue #6](https://github.com/Troy-LL/trace-anything/issues/6). Do not attach logos or pictures you cannot share.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of case
+      options:
+        - Design2Code baseline page
+        - Single section
+        - Full-page segmentation
+        - Scoring check
+    validations:
+      required: true
+  - type: textarea
+    id: describe
+    attributes:
+      label: What should we include
+      description: Describe the page or section. If you have a link or a file you can share, say how.
+    validations:
+      required: true
+  - type: textarea
+    id: expect
+    attributes:
+      label: What a good result looks like
+      description: What should be scored, labeled, or caught.
+    validations:
+      required: true
