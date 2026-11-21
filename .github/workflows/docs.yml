@@ -27,5 +27,4 @@ jobs:
             --accept 200,206,429
             --timeout 30
             --max-concurrency 4
-            --exclude-mail
             '**/*.md'
