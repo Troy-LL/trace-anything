@@ -9,7 +9,7 @@ Give it a screenshot, it writes HTML/CSS/TS, renders it, checks the result again
 
 ![Spec stage](https://img.shields.io/badge/status-spec%20stage-d97706?style=flat-square)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-3f3f46?style=flat-square)](LICENSE)
-![MCP and CLI](https://img.shields.io/badge/interface-MCP%20%2B%20CLI-0f766e?style=flat-square)
+![Skills and CLI](https://img.shields.io/badge/interface-Skills%20%2B%20CLI-0f766e?style=flat-square)
 ![TypeScript](https://img.shields.io/badge/language-TypeScript-3178c6?style=flat-square)
 [![Docs](https://img.shields.io/github/actions/workflow/status/Troy-LL/trace-anything/docs.yml?branch=main&style=flat-square&label=docs)](https://github.com/Troy-LL/trace-anything/actions/workflows/docs.yml)
 
@@ -34,7 +34,7 @@ We write real markup instead, then check that markup against your picture so the
 | A section image | Write the component, render it, score it, and fix the misses | A component, plus a score against that crop |
 | A full-page image | Split the page into sections, wait for your review if you want it, then build each section and put the page back together | Annotations, an overlay, section crops, an assembled page, and a page-level score |
 | A stack choice | Emit the project in that stack | A project that builds. For now that means plain HTML/CSS/TS, Vite, and a static build |
-| A call from your editor | Run the same work over MCP or the CLI | JSON out. No editor-specific code in the core |
+| A call from your agent | Install the skills pack, or run the CLI | The agent drives `trace`. JSON in and out. No editor-specific code in the core |
 
 ## See a run
 
@@ -95,7 +95,13 @@ We will also publish a comparison on the public Design2Code benchmark against sc
 
 ## Use it from your agent
 
-Planned. You will be able to run the same work from a terminal, or from any MCP client such as Cursor, VS Code, Claude Code or Zed. The MCP server speaks stdio, and optionally HTTP. It never runs arbitrary commands.
+Planned. Install the skills pack, then ask your agent. The skills teach it to drive the `trace` CLI.
+
+```sh
+npx skills add https://github.com/Troy-LL/trace-anything
+```
+
+You can also copy the skill folders into `~/.cursor/skills`, `~/.claude/skills`, or `~/.codex/skills`.
 
 Ask your agent:
 
@@ -112,13 +118,15 @@ trace loop
 trace assemble
 ```
 
+A tiny two-tool MCP server is an optional extra, not required for the first version. See [decision 006](docs/decisions/006-skills-first-interface.md).
+
 ## How it's different from screenshot-to-code
 
 - We render what we wrote, score it against your picture, and keep fixing until a threshold or a round limit. A single un-checked pass is not the product.
 - We build one section at a time, then assemble the page. We do not generate a whole page in one shot.
 - You get components you can keep, snapped to design tokens, not a one-off dump of guessed pixels.
 - You can aim at more than one stack later. The first stack is plain HTML/CSS/TS with Vite.
-- You can run it from a terminal or from any MCP client. Editor plugins come later.
+- You can run it from a terminal, or from an agent that has the skills pack. Editor plugins come later.
 
 ## What counts as done
 
@@ -126,13 +134,13 @@ The first version is done only when all four of these hold. The full list is in 
 
 - [ ] On the same fixed Design2Code slice, with the same model, the single-section loop beats screenshot-to-code on the combined metric. Results and scripts are committed so anyone can rerun them.
 - [ ] The ASES full-page example runs end to end: segment, review overlay, build every section in plain HTML/CSS/TS with Vite, assemble, and record the page-level score.
-- [ ] The same run works from both the CLI and an MCP client, with JSON in and out.
+- [ ] The same run works from the CLI and from an agent via the skills pack, with JSON in and out.
 - [ ] No image-as-background tricks, and each run stays under a set spend cap and round limit. Those values are TBD and will be set in [issue #1](https://github.com/Troy-LL/trace-anything/issues/1).
 
 <details>
 <summary>Under the hood</summary>
 
-An editor-neutral library owns the pipeline. The CLI and the MCP server call that library. Adapters turn one shared description into a concrete project. The scoring loop stays the same when the stack changes. See [architecture](docs/architecture.md).
+An editor-neutral library owns the pipeline. The CLI is the engine. A skills pack teaches any agent to drive that CLI. Adapters turn one shared description into a concrete project. The scoring loop stays the same when the stack changes. See [architecture](docs/architecture.md).
 
 ```mermaid
 flowchart TD
@@ -157,9 +165,11 @@ A harness talks to the same core:
 
 ```mermaid
 flowchart LR
-  A[IDE or agent] --> B[MCP or CLI]
-  B --> C[Core library]
-  C --> D[Adapters]
+  A[IDE or agent] --> B[Skills pack]
+  B --> C[CLI]
+  D[Terminal] --> C
+  C --> E[Core library]
+  E --> F[Adapters]
 ```
 
 | Path | What's in it |
@@ -193,15 +203,15 @@ React, Tailwind, Rust, deploy configs, and editor plugins come after the first v
 
 These commands are specified, not implemented.
 
-| CLI command | MCP tool | What it does | Status |
-| --- | --- | --- | --- |
-| `trace segment` | `segment` | Isolate a full-page image into annotated sections | Planned |
-| `trace extract` | `extract` | Extract the spec and the intermediate tree | Planned |
-| `trace generate` | `generate` | Emit a component through an adapter | Planned |
-| `trace render` | `render` | Render the component at the image's exact width | Planned |
-| `trace score` | `score` | Score the render and mark mismatches | Planned |
-| `trace loop` | `loop` | Run extract through fix until the threshold or N | Planned |
-| `trace assemble` | `assemble` | Stitch sections and score the full page | Planned |
+| CLI command | What it does | Status |
+| --- | --- | --- |
+| `trace segment` | Isolate a full-page image into annotated sections | Planned |
+| `trace extract` | Extract the spec and the intermediate tree | Planned |
+| `trace generate` | Emit a component through an adapter | Planned |
+| `trace render` | Render the component at the image's exact width | Planned |
+| `trace score` | Score the render and mark mismatches | Planned |
+| `trace loop` | Run extract through fix until the threshold or N | Planned |
+| `trace assemble` | Stitch sections and score the full page | Planned |
 
 </details>
 
@@ -214,11 +224,11 @@ Spec stage. Nothing is implemented. Issues are the source of work.
 | [#1](https://github.com/Troy-LL/trace-anything/issues/1) | Baseline: screenshot-to-code on a Design2Code slice | None. First, and measurement only. |
 | [#2](https://github.com/Troy-LL/trace-anything/issues/2) | v0.1: single-section image to component loop | #1 |
 | [#3](https://github.com/Troy-LL/trace-anything/issues/3) | Extra stacks, after the first version | #2 |
-| [#4](https://github.com/Troy-LL/trace-anything/issues/4) | CLI and MCP server | #2 |
+| [#4](https://github.com/Troy-LL/trace-anything/issues/4) | Skills pack and CLI | #2 |
 | [#5](https://github.com/Troy-LL/trace-anything/pull/5) | Product spec and docs, now on main | None. Docs pull request. |
 | [#6](https://github.com/Troy-LL/trace-anything/issues/6) | Full-page input: segment, annotate, assemble | #2 |
 
-Docs: [architecture](docs/architecture.md), [design](docs/design.md), [eval](docs/eval.md), [001](docs/decisions/001-intermediate-format-and-adapters.md), [002](docs/decisions/002-harness-neutral-interface.md), [003](docs/decisions/003-section-first.md), [004](docs/decisions/004-full-page-segment-and-assemble.md), [005](docs/decisions/005-mvp-win-condition.md).
+Docs: [architecture](docs/architecture.md), [design](docs/design.md), [eval](docs/eval.md), [001](docs/decisions/001-intermediate-format-and-adapters.md), [002](docs/decisions/002-harness-neutral-interface.md), [003](docs/decisions/003-section-first.md), [004](docs/decisions/004-full-page-segment-and-assemble.md), [005](docs/decisions/005-mvp-win-condition.md), [006](docs/decisions/006-skills-first-interface.md).
 
 ## Want to help?
 

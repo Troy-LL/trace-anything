@@ -1,6 +1,8 @@
 # Harness-neutral interface
 
-Status: Accepted
+Status: Superseded by 006
+
+This decision is superseded by [006](006-skills-first-interface.md). The editor-neutral library and the `trace` CLI still hold. The primary agent path is no longer a full MCP server.
 
 ## Context
 

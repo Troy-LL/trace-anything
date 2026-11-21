@@ -1,10 +1,10 @@
 # Design
 
-v0.1 has no graphical product UI. The operator and agent interface is the CLI and the MCP server.
+v0.1 has no graphical product UI. The operator interface is the `trace` CLI. The agent interface is a skills pack that drives that CLI.
 
 ## Who it is for
 
-A person or an agent in any IDE or harness who has a section image, or a whole-page picture, and wants a real component. The same operations must work from Cursor, VS Code, Claude Code, Codex, Zed, or any MCP-capable harness, and from a terminal with no editor at all.
+A person or an agent in any IDE or harness who has a section image, or a whole-page picture, and wants a real component. The same operations must work from a terminal with no editor at all, and from an agent in Cursor, VS Code, Claude Code, Codex, or a similar harness after the skills pack is installed.
 
 ## CLI
 
@@ -75,11 +75,23 @@ Short sample of the annotations file. The bboxes are illustrative of the schema,
 }
 ```
 
-## MCP server
+## Skills pack
 
-The MCP server exposes the same operations as tools: segment, extract the spec, generate, render, score, the full loop, and assemble. Transport is stdio by default. HTTP is optional. The server never runs arbitrary commands; it only exposes those documented tools.
+The primary agent interface is a skills pack in this repo: SKILL.md folders that follow the Agent Skills standard. The skills teach an agent to drive the CLI for segment, a section loop, score, the fix loop, and assemble.
 
-No IDE-specific code belongs in the core. Editor integrations are thin wrappers around these tools and are out of scope for v0.1, and are post-MVP.
+Install is planned as:
+
+```sh
+npx skills add https://github.com/Troy-LL/trace-anything
+```
+
+The same folders can be copied into `~/.cursor/skills`, `~/.claude/skills`, or `~/.codex/skills`.
+
+No IDE-specific code belongs in the core. Editor integrations are thin wrappers around the CLI or the skills pack and are out of scope for v0.1, and are post-MVP.
+
+## Optional MCP server
+
+A tiny MCP server is an optional extra. It is not required for the MVP, and it is not required for any other issue. If it exists, it exposes two tools in the Code Mode pattern: `search` over the typed CLI and library surface, and `execute`, which runs a short script against that surface in a sandbox. The point is to keep context cost around a thousand tokens, instead of one tool per operation. It is not a catalog of segment, extract, generate, render, score, loop, and assemble tools. See [decision 006](decisions/006-skills-first-interface.md).
 
 ## Loop behavior
 
@@ -111,12 +123,12 @@ The threshold and N are chosen and written down before an eval run. Each failed 
 
 ## Safety and legal
 
-**Stance.** The tool is for your own designs, or for inspiration. Cloning someone else's brand for release is not acceptable use. That stance will be stated in the docs for strangers. The MCP server never runs arbitrary commands.
+**Stance.** The tool is for your own designs, or for inspiration. Cloning someone else's brand for release is not acceptable use. That stance will be stated in the docs for strangers. The CLI never runs arbitrary host commands. The optional two-tool MCP server, if present, only searches and executes against the typed library surface, in a sandbox.
 
 **Open questions.** Does the acceptable-use statement live only in the README, or also as a short legal page? Do we refuse obvious brand-clone prompts, or only document the stance?
 
 ## Distribution
 
-**Stance.** A stranger should be able to install the MVP as an npm package or a single binary, with a small config and docs that explain the CLI and the MCP server.
+**Stance.** A stranger should be able to install the MVP as an npm package or a single binary, plus the skills pack, with a small config and docs that explain the CLI and how to add the skills.
 
 **Open questions.** Which shipping form comes first, npm or a single binary? What is the minimum config file?
