@@ -5,13 +5,14 @@ Trace Anything turns a section image, or a full-page image isolated into section
 ## Processes
 
 - **Library.** Editor-neutral core. It owns segment, extract, generate, render, score, assemble, and the full loop. No IDE-specific code lives here.
-- **CLI.** The `trace` binary calls the library. JSON in, JSON out.
-- **MCP server.** The same library operations, over stdio by default, and optionally over HTTP. Any MCP-capable harness can call it. It never runs arbitrary commands; it only exposes the documented tools.
+- **CLI.** The `trace` binary calls the library. JSON in, JSON out. This is the engine the skills pack, and any later wrapper, must call.
+- **Skills pack.** SKILL.md folders in this repo, following the Agent Skills standard. They teach any agent to drive the CLI for segment, a section loop, score, the fix loop, and assemble. Install is planned as `npx skills add https://github.com/Troy-LL/trace-anything`, or by copying the folders into `~/.cursor/skills`, `~/.claude/skills`, or `~/.codex/skills`.
+- **Optional MCP server.** A tiny two-tool server in the Code Mode pattern: `search` over the typed CLI and library surface, and `execute`, which runs a short script against that surface in a sandbox. Not required for the MVP. See [decision 006](decisions/006-skills-first-interface.md).
 - **Renderer.** Playwright opens the adapter's built output at the source image's exact width and captures a screenshot.
 - **Adapters.** Each adapter turns the same intermediate component description into a concrete project (framework, build tool, styling, deploy config).
 - **Eval runner.** Scores a fixed slice and writes dated results under `evals/`. See [eval](eval.md).
 
-Editor integrations, if they exist later, are thin wrappers around the CLI or the MCP server. They are not part of the core.
+Editor integrations, if they exist later, are thin wrappers around the CLI or the skills pack. They are not part of the core.
 
 ## Data flow
 
@@ -65,6 +66,6 @@ The adapter interface is documented in code when adapters ship. The MVP adapter 
 - It does not generate a full page in one shot. Full-page input goes through `segment`, the section loop, and assemble.
 - It does not take a multi-page site or Figma input in v0.1.
 - It does not include a graphical product UI in v0.1, and it does not include an interactive GUI editor for annotations.
-- It does not run arbitrary commands through the MCP server or the CLI.
+- It does not run arbitrary host commands through the CLI. The optional MCP server, if present, only searches and executes against the typed library surface, in a sandbox.
 - It does not embed the source image in the output, including as a background.
 - It does not redistribute third-party logos.

@@ -8,6 +8,6 @@ Please report a vulnerability through [GitHub private vulnerability reporting](h
 
 ## Planned surface
 
-When the MCP server and CLI exist, they will only expose the documented tools: segment, extract, generate, render, score, loop, and assemble. The MCP server never runs arbitrary commands. Transport is stdio by default. HTTP is optional later, and it must not widen that command surface.
+When the CLI exists, it will only expose the documented commands: segment, extract, generate, render, score, loop, and assemble. It never runs arbitrary host commands. The optional two-tool MCP server, if it is built later, only searches and executes against that typed surface, in a sandbox. It must not grow into one tool per command, and it must not widen the surface past that typed API.
 
 Do not send secrets in issues, chat, or sample traces.

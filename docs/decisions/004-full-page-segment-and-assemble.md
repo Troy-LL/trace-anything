@@ -10,7 +10,7 @@ Users can give a whole-page picture, not only a pre-cropped section. It would lo
 
 We will add a first stage, `segment`, for full-page input. A full-page image goes in. The stage detects section boundaries (horizontal bands first, then nested blocks), crops each section, assigns a semantic label (nav/header, hero, features, testimonials, pricing, CTA, footer, other) with a confidence, and writes an annotations file (JSON: section id, bbox, label, confidence, order) plus an annotated overlay PNG with boxes and labels. The user or agent can review or edit the annotations before generation. That human checkpoint is optional via a flag. Each section then runs the existing loop. A final step assembles the sections into a page and scores the whole page against the original too.
 
-The CLI command is `trace segment`, and the MCP surface exposes a matching segment tool. Assembly is `trace assemble`. Segmentation feeds decision 003; it does not replace it.
+The CLI command is `trace segment`. Agents drive it through the skills pack. Assembly is `trace assemble`. Segmentation feeds decision 003; it does not replace it.
 
 ## Consequences
 
