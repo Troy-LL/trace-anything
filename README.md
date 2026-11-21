@@ -48,3 +48,7 @@ The MCP server exposes the same operations over stdio, and optionally over HTTP.
 - Multi-page sites, Figma input, and a graphical product UI are out of scope for v0.1. Annotation review is JSON edit plus the overlay PNG, not an interactive GUI editor.
 - Deploy config is generated. The tool does not deploy, and it does not handle account auth.
 - No IDE-specific code belongs in the core.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
