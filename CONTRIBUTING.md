@@ -1,6 +1,6 @@
 # Contributing
 
-Issues are the specs. Open product work is listed in the [README](README.md#status) and in issues [#1](https://github.com/Troy-LL/trace-anything/issues/1) through [#4](https://github.com/Troy-LL/trace-anything/issues/4) and [#6](https://github.com/Troy-LL/trace-anything/issues/6). [#5](https://github.com/Troy-LL/trace-anything/pull/5) is the documentation pull request, not a product issue.
+Issues are the specs. Open product work is listed in the [README](README.md#where-its-at) and in issues [#1](https://github.com/Troy-LL/trace-anything/issues/1) through [#4](https://github.com/Troy-LL/trace-anything/issues/4) and [#6](https://github.com/Troy-LL/trace-anything/issues/6). [#5](https://github.com/Troy-LL/trace-anything/pull/5) is the documentation pull request, not a product issue.
 
 ## Pull requests
 
