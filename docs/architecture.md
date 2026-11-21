@@ -37,6 +37,18 @@ Each cropped section then follows the loop below. After every section has been s
 
 The scoring loop does not change per stack. Only the adapter's emitted code changes.
 
+## Project files
+
+A run writes this layout. The paths are planned; nothing is generated yet.
+
+- `annotations.json`: section id, bbox, label, confidence, and order
+- `overlay.png`: the page image with boxes and labels
+- `sections/`: cropped section images
+- `checks/`: scores, mismatch regions, and score history
+- `out/`: the scaffolded project the adapter emits, including deploy config when requested
+
+Dated eval scores still live under `evals/`. See [eval](eval.md).
+
 ## Adapters
 
 The adapter interface is documented in code when adapters ship. The first adapter (the reference adapter) is plain TS plus Vite plus static. The second is React plus Vite. Later adapters may include Vue, Svelte, Rust options such as Leptos or Yew, and build tools such as Next.js, Astro, or Trunk. Those are listed, not built, in the first adapter pass.
