@@ -20,8 +20,12 @@ The same slice, cropped to sections, is the eval set for the single-section loop
 
 Every adapter's output is built and rendered through the same Playwright scoring. Every adapter must stay within a small, documented score gap of the reference adapter (plain TS plus Vite plus static) on the eval set.
 
+## Segmentation and page assembly
+
+A small, hand-labeled set of full-page screenshots is the gold for `segment`. Segmentation quality is measured with box IoU and label accuracy against those labels. After each section has run the v0.1 loop, assemble is scored at page level against the original full-page image, using the same combined score as the section loop. The hand-labeled set, the IoU and label-accuracy table, and the page-level scores are committed.
+
 ## Gold command
 
-When the runner exists, the gold command is `trace eval`. It writes dated score files under `evals/`. A rerun with the same seed and slice must reproduce the committed table. The sample floor is the fixed baseline slice (about 50 pages) and, for v0.1, that slice cropped to sections.
+When the runner exists, the gold command is `trace eval`. It writes dated score files under `evals/`. A rerun with the same seed and slice must reproduce the committed table. The sample floor is the fixed baseline slice (about 50 pages), that slice cropped to sections for v0.1, and the hand-labeled full-page set for segmentation and page-level scores.
 
 Until `trace eval` exists, baseline scripts committed for the issue #1 run are the gold command, and they write to the same `evals/` directory.

@@ -1,10 +1,10 @@
 # Architecture
 
-Trace Anything turns a section image into a scored component. There is no runnable code yet. This file is the topology the implementation must follow.
+Trace Anything turns a section image, or a full-page image isolated into sections, into scored components. There is no runnable code yet. This file is the topology the implementation must follow.
 
 ## Processes
 
-- **Library.** Editor-neutral core. It owns extract, generate, render, score, and the full loop. No IDE-specific code lives here.
+- **Library.** Editor-neutral core. It owns segment, extract, generate, render, score, assemble, and the full loop. No IDE-specific code lives here.
 - **CLI.** The `trace` binary calls the library. JSON in, JSON out.
 - **MCP server.** The same library operations, over stdio by default, and optionally over HTTP. Any MCP-capable harness can call it.
 - **Renderer.** Playwright opens the adapter's built output at the source image's exact width and captures a screenshot.
@@ -14,6 +14,17 @@ Trace Anything turns a section image into a scored component. There is no runnab
 Editor integrations, if they exist later, are thin wrappers around the CLI or the MCP server. They are not part of the core.
 
 ## Data flow
+
+If the input is a full-page image, `segment` runs first:
+
+1. Detect section boundaries, horizontal bands first, then nested blocks.
+2. Crop each section and assign a semantic label (nav/header, hero, features, testimonials, pricing, CTA, footer, other) with a confidence.
+3. Write an annotations file (JSON: section id, bbox, label, confidence, order) and an annotated overlay PNG with boxes and labels.
+4. If the optional review flag is set, stop so a person or agent can edit the annotations, then continue with the edited file.
+
+Each cropped section then follows the loop below. After every section has been scored, a final assemble step stitches the sections into a page and scores that page against the original full-page image too.
+
+### Section loop
 
 1. Input is one section image, plus the chosen stack (framework, build tool, styling, optional component library or tokens, deploy target).
 2. Extract a spec: text via OCR, colors, spacing, fonts, and layout boxes, snapped to design tokens.
@@ -33,6 +44,6 @@ The adapter interface is documented in code when adapters ship. The first adapte
 ## What this system does not do
 
 - It does not deploy, and it does not perform account auth.
-- It does not generate a full page or a multi-page site in v0.1.
-- It does not take Figma input in v0.1.
-- It does not include a graphical product UI in v0.1.
+- It does not generate a full page in one shot. Full-page input goes through `segment`, the section loop, and assemble.
+- It does not take a multi-page site or Figma input in v0.1.
+- It does not include a graphical product UI in v0.1, and it does not include an interactive GUI editor for annotations.

@@ -14,6 +14,7 @@ required=(
   docs/decisions/001-intermediate-format-and-adapters.md
   docs/decisions/002-harness-neutral-interface.md
   docs/decisions/003-section-first.md
+  docs/decisions/004-full-page-segment-and-assemble.md
   scripts/verify-docs.sh
 )
 

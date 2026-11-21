@@ -8,7 +8,7 @@ It would look right to ship Trace Anything as a plugin for one editor. That woul
 
 ## Decision
 
-We will keep the core an editor-neutral library, and expose the same operations through a CLI (`trace` commands with JSON in and out) and an MCP server (stdio, and optionally HTTP). The tools are extract the spec, generate, render, score, and the full loop. Cursor, VS Code, Claude Code, Codex, Zed, or any MCP-capable harness can call that server. No IDE-specific code belongs in the core. Editor integrations are thin wrappers and are out of scope for v0.1.
+We will keep the core an editor-neutral library, and expose the same operations through a CLI (`trace` commands with JSON in and out) and an MCP server (stdio, and optionally HTTP). The tools are segment, extract the spec, generate, render, score, the full loop, and assemble. Cursor, VS Code, Claude Code, Codex, Zed, or any MCP-capable harness can call that server. No IDE-specific code belongs in the core. Editor integrations are thin wrappers and are out of scope for v0.1.
 
 ## Consequences
 
