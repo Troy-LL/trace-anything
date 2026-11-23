@@ -8,7 +8,7 @@ A naive generator would emit React, Tailwind, or another concrete stack directly
 
 ## Decision
 
-We will write one framework-neutral intermediate component description (the spec plus the tree). Per-target adapters emit the code. The Playwright scoring loop stays the same for every stack.
+We will write one framework-neutral intermediate component description (the spec plus the tree). That description is one document per section. The tree is its `root` node. Fields live in [architecture](../architecture.md). Per-target adapters emit the code. The Playwright scoring loop stays the same for every stack.
 
 The first adapter is plain HTML/CSS/TS plus Vite plus static, and is the reference adapter. The second is React plus Vite. Users pick framework, build tool, styling (and optionally their own component library or tokens), and deploy target. Deploy config is generated. Nothing is deployed. React, Tailwind, Rust, and deploy configs are post-MVP; see [decision 005](005-mvp-win-condition.md).
 

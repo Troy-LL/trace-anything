@@ -45,12 +45,11 @@ Split a full-page screenshot into labeled sections:
 ```text
 trace segment
   in:   ases-manila-landing.png
-  out:  annotations.json      section id, bbox, label, confidence, order
-        overlay.png           boxes and labels, for review
-        sections/sec-01.png   nav/header
-        sections/sec-02.png   hero, "Build before it becomes obvious"
-        ...                   (the rest of the page, in order)
-        sections/sec-12.png   footer
+  out:  runs/<runId>/annotations.json
+        runs/<runId>/overlay.png
+        runs/<runId>/sections/sec-01/source.png   nav/header
+        runs/<runId>/sections/sec-02/source.png   hero
+        runs/<runId>/sections/sec-12/source.png   footer
 ```
 
 Review the overlay, and edit `annotations.json` if a cut is wrong:
@@ -64,18 +63,18 @@ Build and score one section, then repeat for the rest of the page:
 
 ```text
 trace loop
-  in:   sections/sec-02.png, plus plain HTML/CSS/TS with Vite
-  out:  out/sec-02/           the built component
-        checks/sec-02.json    combined score vs that crop, written after the run
-  then: generate, render, score, and fix until the threshold or N
+  in:   runs/<runId>/sections/sec-02/source.png, plus plain HTML/CSS/TS with Vite
+  out:  runs/<runId>/sections/sec-02/pass-<n>/project/
+        runs/<runId>/sections/sec-02/pass-<n>/score.json
+  then: generate, render, and score until that crop's baseline combined, or 3 passes
 ```
 
 Put the scored sections back together and score the whole page:
 
 ```text
 trace assemble
-  out:  out/page/             the stitched page
-        checks/page.json      page-level score vs the original, written after the run
+  out:  runs/<runId>/out/          the stitched page
+        runs/<runId>/.../score.json   page-level score vs the original
 ```
 
 The same commands take JSON in and write JSON out. File layout is in [architecture](docs/architecture.md#project-files).
@@ -135,7 +134,7 @@ The first version is done only when all four of these hold. The full list is in 
 - [ ] On the same fixed Design2Code slice, with the same model, the single-section loop beats screenshot-to-code on the combined metric. Results and scripts are committed so anyone can rerun them.
 - [ ] The ASES full-page example runs end to end: segment, review overlay, build every section in plain HTML/CSS/TS with Vite, assemble, and record the page-level score.
 - [ ] The same run works from the CLI and from an agent via the skills pack, with JSON in and out.
-- [ ] No image-as-background tricks, and each run stays under a set spend cap and round limit. Those values are TBD and will be set in [issue #1](https://github.com/Troy-LL/trace-anything/issues/1).
+- [ ] No image-as-background tricks. A product eval run of the fixed slice stays under $10, and each section stops after 3 passes. See [decision 005](docs/decisions/005-mvp-win-condition.md).
 
 <details>
 <summary>Under the hood</summary>
@@ -150,9 +149,8 @@ flowchart TD
   D --> E[Optional review]
   E --> F[Per section]
   B -->|no| F
-  F --> G[extract spec]
-  G --> H[intermediate format]
-  H --> I[adapter]
+  F --> G[extract one intermediate description]
+  G --> I[adapter]
   I --> J[render]
   J --> K[score]
   K --> L{Threshold or N?}
@@ -174,11 +172,11 @@ flowchart LR
 
 | Path | What's in it |
 | --- | --- |
-| `annotations.json` | Section id, bbox, label, confidence, and order |
-| `overlay.png` | The page image with boxes and labels |
-| `sections/` | Cropped section images |
-| `checks/` | Scores, mismatch regions, and score history |
-| `out/` | The scaffolded project |
+| `runs/<runId>/annotations.json` | Snapshot: schemaVersion, source, section id, bbox, label, confidence, order |
+| `runs/<runId>/overlay.png` | The page image with boxes and labels |
+| `runs/<runId>/sections/<id>/source.png` | Cropped section image |
+| `runs/<runId>/sections/<id>/pass-<n>/` | That pass's intermediate description, project, screenshot, and score record |
+| `runs/<runId>/out/` | The assembled page |
 
 </details>
 
@@ -206,11 +204,11 @@ These commands are specified, not implemented.
 | CLI command | What it does | Status |
 | --- | --- | --- |
 | `trace segment` | Isolate a full-page image into annotated sections | Planned |
-| `trace extract` | Extract the spec and the intermediate tree | Planned |
+| `trace extract` | Write one intermediate description for that pass | Planned |
 | `trace generate` | Emit a component through an adapter | Planned |
 | `trace render` | Render the component at the image's exact width | Planned |
 | `trace score` | Score the render and mark mismatches | Planned |
-| `trace loop` | Run extract through fix until the threshold or N | Planned |
+| `trace loop` | Run extract once, then generate, render, and score until the crop's baseline or 3 passes | Planned |
 | `trace assemble` | Stitch sections and score the full page | Planned |
 
 </details>
@@ -223,7 +221,7 @@ Spec stage. Nothing is implemented. Issues are the source of work.
 | --- | --- | --- |
 | [#1](https://github.com/Troy-LL/trace-anything/issues/1) | Baseline: screenshot-to-code on a Design2Code slice | None. First, and measurement only. |
 | [#2](https://github.com/Troy-LL/trace-anything/issues/2) | v0.1: single-section image to component loop | #1 |
-| [#3](https://github.com/Troy-LL/trace-anything/issues/3) | Extra stacks, after the first version | #2 |
+| [#3](https://github.com/Troy-LL/trace-anything/issues/3) | Extra stacks, after the first version | MVP (#1, #2, #4, #6) |
 | [#4](https://github.com/Troy-LL/trace-anything/issues/4) | Skills pack and CLI | #2 |
 | [#5](https://github.com/Troy-LL/trace-anything/pull/5) | Product spec and docs, now on main | None. Docs pull request. |
 | [#6](https://github.com/Troy-LL/trace-anything/issues/6) | Full-page input: segment, annotate, assemble | #2 |
@@ -235,7 +233,7 @@ Docs: [architecture](docs/architecture.md), [design](docs/design.md), [eval](doc
 If you want to contribute before the first loop ships, these are useful starting points:
 
 - An adapter for another stack, tracked in [issue #3](https://github.com/Troy-LL/trace-anything/issues/3).
-- Ideas for how we should score a render, on [issue #1](https://github.com/Troy-LL/trace-anything/issues/1) and [issue #2](https://github.com/Troy-LL/trace-anything/issues/2).
+- The baseline measurement itself, on [issue #1](https://github.com/Troy-LL/trace-anything/issues/1). The score formula is already set.
 - Test images for the hand-labeled full-page set, on [issue #6](https://github.com/Troy-LL/trace-anything/issues/6). Please do not send logos or pictures you cannot share.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Run `bash scripts/verify-docs.sh` before you ask for review.

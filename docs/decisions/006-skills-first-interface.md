@@ -12,7 +12,7 @@ The better pattern, following [Cloudflare's current agent interface](https://dev
 
 The core stays an editor-neutral library. The `trace` CLI (JSON in and out) stays the engine.
 
-The primary agent interface is an Agent Skills pack: SKILL.md folders that follow the Agent Skills standard. The skills teach any agent to drive the CLI for segment, a section loop, score, the fix loop, and assemble. Install is planned as:
+The primary agent interface is an Agent Skills pack: SKILL.md folders that follow the Agent Skills standard. The skills teach any agent to drive the CLI for segment, a section loop, score, the fix loop, and assemble. The section-loop skill calls `trace loop`, which runs generate, render, and score until it stops. The fix-loop skill runs only after that command stops short of the threshold: the agent calls `generate` with the mismatches it chose. Install is planned as:
 
 ```sh
 npx skills add https://github.com/Troy-LL/trace-anything

@@ -14,7 +14,7 @@ This baseline does not include building Trace Anything.
 
 ## v0.1 probe
 
-The same slice, cropped to sections, is the eval set for the single-section loop. The combined score is perceptual similarity, block/layout match, OCR text match, and color. The threshold and the maximum number of rounds N are chosen and written down before the run. The loop must beat the baseline on that combined score. The eval set, the threshold, N, and the score history are committed.
+The same slice, cropped to sections, is the eval set for the single-section loop. The product combined score is perceptual similarity, block/layout match, OCR text match, and color. Each component is a number from 0 to 1, and `combined` is their mean. Accessibility is a gate on the same score record and is outside that combined score. Issue #1 scores the baseline outputs with this same `combined`, not only with the official metrics. The threshold for a section is that crop's baseline `combined`. N is 3 generate/render/score passes. The slice wins when its average `combined` is higher than the baseline slice average. The official Design2Code metrics (visual/CLIP, block match, text, position, and color) are a second report on the same outputs. Position stays in that report and is not a component of the product combined score. The eval set, both reports, and the score history are committed.
 
 ## Adapter gap
 
@@ -32,15 +32,13 @@ Until `trace eval` exists, baseline scripts committed for the issue #1 run are t
 
 ## Scoring honesty
 
-**Stance.** Image-as-background, and any embedding of the source image in the output, are banned. Layout, text, and color are scored separately, as well as the combined metric. A close-looking screenshot that cheats does not count. See [decision 005](decisions/005-mvp-win-condition.md).
+**Stance.** Image-as-background, and any embedding of the source image in the output, are banned. Perceptual similarity, layout, text, and color are stored separately, as well as the combined metric. A close-looking screenshot that cheats does not count. See [decision 005](decisions/005-mvp-win-condition.md).
 
 **Open questions.** How is an embedded source image detected automatically? Are the official Design2Code metrics enough, or is a dedicated cheat check required?
 
 ## Cost and speed
 
-**Stance.** Every scored product run stays under a spend cap and a round limit. Those values are TBD and will be set in issue #1. They are separate from the about $10 cap on the baseline measurement. Repeated extract and score work is cached. Reruns use a fixed seed so the same slice reproduces the same table.
-
-**Open questions.** Is the spend cap per section, per page, or per eval slice? What is cached: specs, renders, or model calls?
+**Stance.** A product eval run of the fixed slice stays under $10. The cap is per slice, and it is separate from the about $10 cap on the baseline measurement. If a run would pass $10, stop and commit the completed sections as a partial run. N is 3 generate/render/score passes per section. Repeated extract and score work is cached. The cache stores extract results and score records. Its key is the input bytes, the command, its params, the model name and version, the seed, and the tool version. See [architecture](architecture.md). Reruns use a fixed seed so the same slice reproduces the same table.
 
 ## Proof
 

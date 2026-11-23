@@ -13,18 +13,18 @@ The CLI name is `trace`. Every command takes JSON on stdin or as a file argument
 | Command | Job |
 | --- | --- |
 | `trace segment` | Read a full-page image, isolate sections, and write the annotations JSON plus an annotated overlay PNG. |
-| `trace extract` | Read a section image and write the spec (OCR text, colors, spacing, fonts, layout boxes, snapped to design tokens) and the intermediate tree. |
-| `trace generate` | Read the intermediate description and the chosen stack, and write a scaffolded project that builds. |
-| `trace render` | Build the project, open it in Playwright at the source image's exact width, and write the screenshot. |
-| `trace score` | Compare the screenshot to the source image and write the combined score plus mismatched regions. |
-| `trace loop` | Run extract, generate, render, score, and fix until the score clears the documented threshold or N rounds. |
+| `trace extract` | Read a section image and write one intermediate description for that pass. |
+| `trace generate` | Read that pass's intermediate description and the chosen stack, and write that pass's project. |
+| `trace render` | Build that pass's project, open it in Playwright at the source image's exact width, and write the screenshot. |
+| `trace score` | Compare the screenshot to the source image and write one score record. |
+| `trace loop` | Run extract once, then generate, render, and score inside this command until `combined` clears the documented threshold or N rounds. |
 | `trace assemble` | Stitch scored sections into a page and score that page against the original full-page image. |
 
 `trace loop` is how issue #2 is run end to end on one section. Stack choices (framework, build tool, styling, optional library or tokens, deploy target) are inputs to `generate` and `loop`, not separate product screens.
 
 ### Segment and review
 
-`trace segment` detects section boundaries (horizontal bands first, then nested blocks), crops each section, and assigns a semantic label (nav/header, hero, features, testimonials, pricing, CTA, footer, other) with a confidence. The annotations file records section id, bbox, label, confidence, and order. The overlay PNG draws those boxes and labels on the page image.
+`trace segment` detects section boundaries (horizontal bands first, then nested blocks), crops each section, and assigns a semantic label (nav/header, hero, features, testimonials, pricing, CTA, footer, other) with a confidence. The annotations file records `schemaVersion`, `source`, section id, bbox in source-image pixels, label, confidence, and order. The field list is in [architecture](architecture.md). The overlay PNG draws those boxes and labels on the page image.
 
 A human checkpoint lets a person or agent review or edit the annotations before generation. The checkpoint is optional via a flag. When the flag is set, `segment` writes the JSON and overlay and waits for an edited annotations file before any section loop starts. When the flag is unset, the cropped sections go straight into the loop. There is no interactive GUI editor; review is JSON edit plus the overlay.
 
@@ -49,6 +49,8 @@ Short sample of the annotations file. The bboxes are illustrative of the schema,
 
 ```json
 {
+  "schemaVersion": 1,
+  "source": {"hash": "source-image-hash", "width": 1440, "height": 7520},
   "sections": [
     {
       "id": "sec-01",
@@ -77,7 +79,7 @@ Short sample of the annotations file. The bboxes are illustrative of the schema,
 
 ## Skills pack
 
-The primary agent interface is a skills pack in this repo: SKILL.md folders that follow the Agent Skills standard. The skills teach an agent to drive the CLI for segment, a section loop, score, the fix loop, and assemble.
+The primary agent interface is a skills pack in this repo: SKILL.md folders that follow the Agent Skills standard. The skills teach an agent to drive the CLI for segment, a section loop, score, the fix loop, and assemble. The section-loop skill calls `trace loop`. The fix-loop skill is the path after that command stops short of the threshold: the agent calls `generate` with the mismatches it chose.
 
 Install is planned as:
 
@@ -95,7 +97,7 @@ A tiny MCP server is an optional extra. It is not required for the MVP, and it i
 
 ## Loop behavior
 
-The threshold and N are chosen and written down before an eval run. Each failed pass returns the mismatched regions to generate. If the cap of N is hit, the last output, the score history, and the remaining mismatches are returned. The tool does not deploy. Deploy config files such as `vercel.json` and `wrangler.toml` are post-MVP.
+The threshold for a section is that crop's baseline `combined`. N is 3. `trace loop` owns every generate, render, and score pass until it stops. On each failed pass it feeds that pass's mismatches into the next generate. When it stops, `data` carries the last output, the score history, the remaining mismatches, and `stopReason` (`threshold` or `cap`). A person or agent who wants another pass after a `cap` uses the fix-loop skill, which calls `generate` with chosen mismatches and does not re-enter `trace loop`. The tool does not deploy. Deploy config files such as `vercel.json` and `wrangler.toml` are post-MVP.
 
 ## Input quality
 
@@ -117,9 +119,9 @@ The threshold and N are chosen and written down before an eval run. Each failed 
 
 ## Output quality beyond looks
 
-**Stance.** Markup should be accessible: real headings, alt text, a documented contrast bar, clean component boundaries, and design tokens rather than one-off pixel values.
+**Stance.** Markup should be accessible: real headings, alt text, a documented contrast bar, clean component boundaries, and design tokens rather than one-off pixel values. Accessibility, including contrast, is a gate on the score record. It is outside `combined`, so the visual score stays a visual score.
 
-**Open questions.** Which contrast bar is the gate? Are accessibility checks part of the combined score, or a separate gate so the visual score stays honest?
+**Open questions.** Which contrast bar is the gate?
 
 ## Safety and legal
 
