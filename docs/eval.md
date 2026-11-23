@@ -12,6 +12,24 @@ API spend for the baseline is capped at about $10. If the cap is reached, commit
 
 This baseline does not include building Trace Anything.
 
+The committed slice is `eval/baseline/slice.json`: seed 1, 50 ids from Design2Code test indices 0 through 483, model `gpt-4o-2024-08-06`, 3 passes, and a $10 cap. Page images are not in this repo.
+
+Dry run, which does not open the network:
+
+```sh
+node --experimental-strip-types scripts/baseline.ts --dry-run
+```
+
+Live run refuses without `OPENAI_API_KEY` or without `--confirm-spend 10`. When both are present this phase still does not call the provider. The score table stays pending until a paid run is committed. That commit is what lets issue #2 start.
+
+```sh
+node --experimental-strip-types scripts/baseline.ts --confirm-spend 10
+```
+
+| id | combined | status |
+| --- | --- | --- |
+| pending | pending | pending |
+
 ## v0.1 probe
 
 The same slice, cropped to sections, is the eval set for the single-section loop. The product combined score is perceptual similarity, block/layout match, OCR text match, and color. Each component is a number from 0 to 1, and `combined` is their mean. Accessibility is a gate on the same score record and is outside that combined score. Issue #1 scores the baseline outputs with this same `combined`, not only with the official metrics. The threshold for a section is that crop's baseline `combined`. N is 3 generate/render/score passes. The slice wins when its average `combined` is higher than the baseline slice average. The official Design2Code metrics (visual/CLIP, block match, text, position, and color) are a second report on the same outputs. Position stays in that report and is not a component of the product combined score. The eval set, both reports, and the score history are committed.
