@@ -28,12 +28,8 @@ for f in "${required[@]}"; do
 done
 
 # Paths mapped in AGENTS.md bullets must exist.
-while IFS= read -r path; do
-  if [[ ! -e "$path" ]]; then
-    echo "mapped but missing: $path"
-    status=1
-  fi
-done < <(python3 - << 'PY'
+map_list="$root/.verify-docs-map.$$"
+python3 - << 'PY' > "$map_list"
 from pathlib import Path
 text = Path("AGENTS.md").read_text()
 for line in text.splitlines():
@@ -44,7 +40,13 @@ for line in text.splitlines():
                 # load-ceiling mention of docs/eval.md is in a non-bullet line
                 print(part)
 PY
-)
+while IFS= read -r path; do
+  if [[ ! -e "$path" ]]; then
+    echo "mapped but missing: $path"
+    status=1
+  fi
+done < "$map_list"
+rm -f "$map_list"
 
 for banned in CONTEXT.md GLOSSARY.md docs/glossary.md docs/CONTEXT.md docs/GLOSSARY.md; do
   if [[ -e "$banned" ]]; then
