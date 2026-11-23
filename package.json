@@ -1,0 +1,9 @@
+{
+  "name": "trace-anything",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test scripts/baseline.test.ts",
+    "baseline:dry": "node --experimental-strip-types scripts/baseline.ts --dry-run"
+  }
+}
