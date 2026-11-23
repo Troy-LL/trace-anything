@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "seed": 1,
+  "size": 50,
+  "population": 484,
+  "model": "gpt-4o-2024-08-06",
+  "passes": 3,
+  "spendCapUsd": 10,
+  "method": "mulberry32 seed 1 shuffles Design2Code test indices 0 through 483. The first 50 become ids d2c- plus three digits. Images are not stored in this repo.",
+  "ids": ["d2c-438","d2c-171","d2c-187","d2c-184","d2c-109","d2c-336","d2c-094","d2c-443","d2c-155","d2c-255","d2c-073","d2c-352","d2c-217","d2c-331","d2c-247","d2c-084","d2c-411","d2c-177","d2c-339","d2c-329","d2c-327","d2c-119","d2c-224","d2c-150","d2c-299","d2c-070","d2c-293","d2c-416","d2c-350","d2c-117","d2c-435","d2c-393","d2c-281","d2c-058","d2c-098","d2c-252","d2c-268","d2c-151","d2c-450","d2c-097","d2c-363","d2c-357","d2c-483","d2c-149","d2c-322","d2c-195","d2c-399","d2c-246","d2c-467","d2c-341"]
+}
