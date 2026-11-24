@@ -12,7 +12,7 @@ API spend for the baseline is capped at about $10. If the cap is reached, commit
 
 This baseline does not include building Trace Anything.
 
-The committed slice is `eval/baseline/slice.json`: seed 1, 50 ids from Design2Code test indices 0 through 483, model `gpt-4o-2024-08-06`, 3 passes, and a $10 cap. Page images are not in this repo.
+The committed slice is `eval/baseline/slice.json`: seed 1, 50 ids from Design2Code test indices 0 through 483, provider `cursor`, model `composer-2.5`, 3 passes, and a $10 cap. Page images are not in this repo.
 
 Dry run, which does not open the network:
 
@@ -20,7 +20,7 @@ Dry run, which does not open the network:
 node --experimental-strip-types scripts/baseline.ts --dry-run
 ```
 
-Live run refuses without `OPENAI_API_KEY` or without `--confirm-spend 10`. When both are present this phase still does not call the provider. The score table stays pending until a paid run is committed. That commit is what lets issue #2 start.
+Live run refuses without `CURSOR_API_KEY` or without `--confirm-spend 10`. When both are present this phase still does not call the provider. The official score table stays pending until a paid run is committed. That commit is what lets issue #2 start.
 
 ```sh
 node --experimental-strip-types scripts/baseline.ts --confirm-spend 10
@@ -29,6 +29,21 @@ node --experimental-strip-types scripts/baseline.ts --confirm-spend 10
 | id | combined | status |
 | --- | --- | --- |
 | pending | pending | pending |
+
+## Local probe
+
+This is not the official baseline. screenshot-to-code and v0 were not run. The product scorer compared a trace to the source image. `combined` is the mean of perceptual similarity, row-luma layout, ink-pixel text overlap, and 16px-block color. Text allows a few pixels of shift. The source image was not embedded. Dated numbers are in `evals/2026-11-24-local-comparison.json`.
+
+| id | method | combined | text |
+| --- | --- | --- | --- |
+| ASES `ec18ea2bf460` | color bands | 0.665 | 0.117 |
+| d2c-438 reference HTML | original HTML, rendered | 0.738 | 0.131 |
+| d2c-438 trace | color bands | 0.737 | 0 |
+| d2c-171 reference HTML | original HTML, rendered | 0.938 | 0.773 |
+| d2c-171 trace | color bands | 0.732 | 0.004 |
+| d2c-171 `21128d8f21d7` | macOS Vision OCR | 0.964 | 0.896 |
+
+The Vision pass writes the words as HTML. Some words are still misread, so the page is not a 1:1 trace. The reference HTML text score can stay low when glyphs do not land on the same pixels as the screenshot.
 
 ## v0.1 probe
 

@@ -1,6 +1,6 @@
 # Architecture
 
-Trace Anything turns a section image, or a full-page image isolated into sections, into scored components. There is no runnable code yet. This file is the topology the implementation must follow.
+Trace Anything turns a section image, or a full-page image isolated into sections, into scored components. The library in `src/` runs that path. `trace loop` segments, extracts, generates, renders, scores, and assembles. `trace generate`, `trace render`, and `trace score` are separate commands. `trace segment`, `trace extract`, and `trace assemble` are not separate commands yet. This file is the topology.
 
 ## Processes
 
@@ -83,11 +83,13 @@ The scoring loop does not change per stack. Only the adapter's emitted code chan
 
 **Stance.** Each step may use a different vision or generation model. Users can bring their own key or model. There is no single-vendor lock-in. The model name and version used at each step are recorded in the score history so a run can be repeated.
 
-**Open questions.** What is the default model for each step in the MVP? How is a user-supplied endpoint configured?
+The local extract uses macOS Vision OCR (`scripts/vision-ocr.swift`) when it runs, and records `local-vision-ocr`. When Vision does not run, position labels are not painted as page text, and the record is `local-color-bands`. Region cuts are still horizontal color bands. No paid model is called.
+
+**Open questions.** How is a user-supplied endpoint configured?
 
 ## Project files
 
-A run writes this layout under `runs/<runId>/`. The paths are planned; nothing is generated yet.
+A run writes this layout under `runs/<runId>/`.
 
 - `manifest.json`: run id, input hash and size, seed, tool version, and per-section status
 - `annotations.json`: the annotations snapshot taken when review ends, or when review is skipped

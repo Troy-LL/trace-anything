@@ -5,9 +5,9 @@
 Give it a screenshot, it writes HTML/CSS/TS, renders it, checks the result against your picture and keeps fixing until they match.
 
 > [!NOTE]
-> This is spec stage. Nothing is implemented yet. The first work is the baseline in [issue #1](https://github.com/Troy-LL/trace-anything/issues/1). See [Where it's at](#where-its-at) for the rest.
+> The local loop runs. `trace loop` segments a page, reads text with macOS Vision when it is available, writes HTML, renders it, and scores it. `generate`, `render`, and `score` are separate commands. The four MVP checks are still open, and the paid Design2Code baseline has not been run. See [Where it's at](#where-its-at).
 
-![Spec stage](https://img.shields.io/badge/status-spec%20stage-d97706?style=flat-square)
+![Loop running](https://img.shields.io/badge/status-loop%20running-0f766e?style=flat-square)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-3f3f46?style=flat-square)](LICENSE)
 ![Skills and CLI](https://img.shields.io/badge/interface-Skills%20%2B%20CLI-0f766e?style=flat-square)
 ![TypeScript](https://img.shields.io/badge/language-TypeScript-3178c6?style=flat-square)
@@ -94,7 +94,7 @@ We will also publish a comparison on the public Design2Code benchmark against sc
 
 ## Use it from your agent
 
-Planned. Install the skills pack, then ask your agent. The skills teach it to drive the `trace` CLI.
+The skills pack is in `skills/`. It teaches an agent to drive the `trace` CLI. Install from a registry is still planned. Until then, copy the folders or run the CLI directly.
 
 ```sh
 npx skills add https://github.com/Troy-LL/trace-anything
@@ -111,10 +111,10 @@ Here's a screenshot of my landing page. Segment it, let me review the overlay, t
 Or from the terminal:
 
 ```text
-# Planned
-trace segment
-trace loop
-trace assemble
+npm run trace -- loop --image page.png
+npm run trace -- generate --intermediate runs/<runId>/sections/sec-01/pass-1/intermediate.json --out project
+npm run trace -- render --project project --width 1280 --out shot.png
+npm run trace -- score --source section.png --screenshot shot.png
 ```
 
 A tiny two-tool MCP server is an optional extra, not required for the first version. See [decision 006](docs/decisions/006-skills-first-interface.md).
@@ -199,23 +199,25 @@ React, Tailwind, Rust, deploy configs, and editor plugins come after the first v
 <details>
 <summary>Commands</summary>
 
-These commands are specified, not implemented.
+`loop`, `generate`, `render`, and `score` run. `segment`, `extract`, and `assemble` happen inside `trace loop` and are not separate commands yet.
 
 | CLI command | What it does | Status |
 | --- | --- | --- |
-| `trace segment` | Isolate a full-page image into annotated sections | Planned |
-| `trace extract` | Write one intermediate description for that pass | Planned |
-| `trace generate` | Emit a component through an adapter | Planned |
-| `trace render` | Render the component at the image's exact width | Planned |
-| `trace score` | Score the render and mark mismatches | Planned |
-| `trace loop` | Run extract once, then generate, render, and score until the crop's baseline or 3 passes | Planned |
-| `trace assemble` | Stitch sections and score the full page | Planned |
+| `trace segment` | Isolate a full-page image into annotated sections | Inside `trace loop` |
+| `trace extract` | Write one intermediate description for that pass | Inside `trace loop` |
+| `trace generate` | Emit a component through an adapter | Runs |
+| `trace render` | Render the component at the image's exact width | Runs |
+| `trace score` | Score the render and mark mismatches | Runs |
+| `trace loop` | Segment, extract, generate, render, score, and assemble | Runs. Stops after one pass when the crop has no baseline |
+| `trace assemble` | Stitch sections and score the full page | Inside `trace loop` |
 
 </details>
 
 ## Where it's at
 
-Spec stage. Nothing is implemented. Issues are the source of work.
+The library runs locally. `npm test` is the check. Issue #1's paid baseline is still the measurement that has not been run.
+
+A color-band pass on the ASES landing page, run `ec18ea2bf460`, scored combined 0.665 (perceptual 0.821, layout 0.872, text 0.117, color 0.848). macOS Vision on Design2Code `d2c-171` (inteliCharts), run `21128d8f21d7`, scored combined 0.964 (text 0.896). The words are real HTML, and some of them are still misread. screenshot-to-code and v0 were not run. Numbers are in [eval](docs/eval.md).
 
 | Issue | What | Depends on |
 | --- | --- | --- |
@@ -230,7 +232,7 @@ Docs: [architecture](docs/architecture.md), [design](docs/design.md), [eval](doc
 
 ## Want to help?
 
-If you want to contribute before the first loop ships, these are useful starting points:
+The first loop runs. These are the open gaps:
 
 - An adapter for another stack, tracked in [issue #3](https://github.com/Troy-LL/trace-anything/issues/3).
 - The baseline measurement itself, on [issue #1](https://github.com/Troy-LL/trace-anything/issues/1). The score formula is already set.
