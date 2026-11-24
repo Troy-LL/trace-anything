@@ -20,6 +20,7 @@ test("two dry runs write the same manifest", async () => {
     assert.equal(a.bytes.toString(), b.bytes.toString())
     const manifest = JSON.parse(a.bytes.toString()) as {
       mode: string
+      provider: string
       model: string
       passes: number
       spendCapUsd: number
@@ -27,7 +28,8 @@ test("two dry runs write the same manifest", async () => {
       requests: { id: string; model: string; image?: string }[]
     }
     assert.equal(manifest.mode, "dry-run")
-    assert.equal(manifest.model, "gpt-4o-2024-08-06")
+    assert.equal(manifest.model, "composer-2.5")
+    assert.equal(manifest.provider, "cursor")
     assert.equal(manifest.passes, 3)
     assert.equal(manifest.spendCapUsd, 10)
     assert.equal(manifest.ids.length, 50)
@@ -46,11 +48,22 @@ test("live run refuses without a key", async () => {
   assert.match(result.reason, /key/i)
 })
 
+test("an OpenAI key does not arm a live run", async () => {
+  const result = await liveRun({
+    root,
+    confirmSpend: 10,
+    env: { OPENAI_API_KEY: "test" },
+    fetchImpl: offlineFetch,
+  })
+  assert.equal(result.ok, false)
+  assert.match(result.reason, /CURSOR_API_KEY/)
+})
+
 test("live run refuses without confirm-spend 10", async () => {
   const result = await liveRun({
     root,
     confirmSpend: 1,
-    env: { OPENAI_API_KEY: "test" },
+    env: { CURSOR_API_KEY: "cursor_test" },
     fetchImpl: offlineFetch,
   })
   assert.equal(result.ok, false)
@@ -62,7 +75,7 @@ test("armed live run does not call the network", async () => {
   const result = await liveRun({
     root,
     confirmSpend: 10,
-    env: { OPENAI_API_KEY: "test" },
+    env: { CURSOR_API_KEY: "cursor_test" },
     fetchImpl: () => {
       called = true
       throw new Error("network")

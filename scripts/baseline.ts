@@ -4,6 +4,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 type Slice = {
+  provider: string
   seed: number
   model: string
   passes: number
@@ -13,6 +14,7 @@ type Slice = {
 
 type ManifestBody = {
   mode: string
+  provider: string
   seed: number
   model: string
   passes: number
@@ -40,6 +42,7 @@ export async function dryRun({
 
   const body: ManifestBody = {
     mode: "dry-run",
+    provider: slice.provider,
     seed: slice.seed,
     model: slice.model,
     passes: slice.passes,
@@ -53,6 +56,7 @@ export async function dryRun({
   const manifest: Manifest = {
     runId,
     mode: body.mode,
+    provider: body.provider,
     seed: body.seed,
     model: body.model,
     passes: body.passes,
@@ -80,9 +84,9 @@ export async function liveRun({
   env: NodeJS.ProcessEnv
   fetchImpl: FetchImpl
 }): Promise<{ ok: boolean; reason: string }> {
-  const key = env.OPENAI_API_KEY
+  const key = env.CURSOR_API_KEY
   if (key === undefined || key === "") {
-    return { ok: false, reason: "refusing live run: OPENAI_API_KEY is missing" }
+    return { ok: false, reason: "refusing live run: CURSOR_API_KEY is missing" }
   }
   if (confirmSpend !== 10) {
     return { ok: false, reason: "refusing live run: pass --confirm-spend 10" }
