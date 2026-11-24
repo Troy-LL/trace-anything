@@ -5,10 +5,16 @@ description: Fill one section's intermediate tree, then let trace write the HTML
 
 # Section loop
 
-The tree exists before the HTML. Open `sections/<id>/pass-1/intermediate.json`.
+Run the section through the CLI:
 
-A node is a `box`, `text`, `image`, `link`, or `control`. Put readable copy on a `text` node. Put a button on `control` and a real anchor on `link`. Leave `image` empty. Do not point any style at the source screenshot.
+```text
+trace loop --image <section.png> [--out <dir>]
+```
 
-Colors come from `tokens.colors`. If you invent copy, add `guesses[]` with `field`, `reason`, and `confidence` on that node.
+The command writes `intermediate.json`, the Vite project, the screenshot, and `score.json`. JSON comes back on stdout.
 
-Write the file, then run `trace generate --intermediate <that file> --out <project dir>`.
+A node is a `box`, `text`, `image`, `link`, or `control`. Readable copy belongs on a `text` node. A button is `control`. A real anchor is `link`. Leave `image` empty. Do not point any style at the source screenshot.
+
+Colors come from `tokens.colors`. Invented copy carries `guesses[]` with `field`, `reason`, and `confidence` on that node.
+
+When `stopReason` is `cap`, stop. The fix-loop skill owns the next generate.
