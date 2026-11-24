@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-24",
+  "scorerVersion": "2",
+  "metrics": "perceptual is 1 minus mean absolute RGB error. layout is 1 minus mean row-luma error. text is ink-pixel overlap, not OCR. color is 1 minus mean 16px-block color distance. combined is the mean of those four.",
+  "ases": {
+    "runId": "ec18ea2bf460",
+    "method": "trace color bands",
+    "components": { "perceptual": 0.821, "layout": 0.872, "text": 0.117, "color": 0.848 },
+    "combined": 0.665,
+    "gate": "source-not-embedded passed"
+  },
+  "design2code": {
+    "slice": "eval/baseline/slice.json seed 1, first two ids",
+    "pages": [
+      {
+        "id": "d2c-438",
+        "file": "15741",
+        "referenceHtml": { "perceptual": 0.937, "layout": 0.943, "text": 0.131, "color": 0.939, "combined": 0.738 },
+        "trace": { "perceptual": 0.981, "layout": 0.985, "text": 0, "color": 0.983, "combined": 0.737 }
+      },
+      {
+        "id": "d2c-171",
+        "file": "5257",
+        "referenceHtml": { "perceptual": 0.986, "layout": 0.995, "text": 0.773, "color": 0.997, "combined": 0.938 },
+        "trace": { "perceptual": 0.971, "layout": 0.977, "text": 0.004, "color": 0.974, "combined": 0.732 },
+        "visionOcr": {
+          "runId": "21128d8f21d7",
+          "model": "local-vision-ocr",
+          "perceptual": 0.979,
+          "layout": 0.989,
+          "text": 0.896,
+          "color": 0.992,
+          "combined": 0.964
+        }
+      }
+    ]
+  },
+  "notRun": [
+    { "tool": "screenshot-to-code", "reason": "OPENAI_API_KEY is unset" },
+    { "tool": "v0", "reason": "VERCEL_TOKEN is unset" }
+  ]
+}
