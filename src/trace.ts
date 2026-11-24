@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { readRaster } from "./decode.ts"
-import { generateProject, runLoop } from "./loop.ts"
+import { assembleRun, extractImage, generateProject, runLoop, segmentImage } from "./loop.ts"
 import { renderBuiltPage } from "./render.ts"
 import { scoreRasters, sourceEmbedded } from "./score.ts"
 
@@ -145,6 +145,56 @@ if (command === "score") {
   process.exit(0)
 }
 
+if (command === "segment") {
+  if (image === undefined) {
+    console.error(
+      JSON.stringify({
+        ok: false,
+        command: "segment",
+        error: { code: "usage", message: "trace segment --image <file> [--out <dir>] [--review]", retryable: false },
+      }),
+    )
+    process.exit(1)
+  }
+  const result = await segmentImage({ image, outDir, review: argv.includes("--review") })
+  console.log(JSON.stringify(result))
+  process.exit(0)
+}
+
+if (command === "extract") {
+  const extractOut = flag(argv, "--out")
+  if (image === undefined || extractOut === undefined) {
+    console.error(
+      JSON.stringify({
+        ok: false,
+        command: "extract",
+        error: { code: "usage", message: "trace extract --image <file> --out <intermediate.json>", retryable: false },
+      }),
+    )
+    process.exit(1)
+  }
+  const result = await extractImage({ image, out: extractOut })
+  console.log(JSON.stringify(result))
+  process.exit(0)
+}
+
+if (command === "assemble") {
+  const runDir = flag(argv, "--run")
+  if (runDir === undefined) {
+    console.error(
+      JSON.stringify({
+        ok: false,
+        command: "assemble",
+        error: { code: "usage", message: "trace assemble --run <runs/id dir>", retryable: false },
+      }),
+    )
+    process.exit(1)
+  }
+  const result = await assembleRun(runDir)
+  console.log(JSON.stringify(result))
+  process.exit(0)
+}
+
 if (command !== "loop" || image === undefined) {
   console.error(
     JSON.stringify({
@@ -156,5 +206,15 @@ if (command !== "loop" || image === undefined) {
   process.exit(1)
 }
 
-const result = await runLoop({ image, outDir, seed: 1 })
+const passesFlag = flag(argv, "--passes")
+const baselineFlag = flag(argv, "--baseline")
+const passes = passesFlag === undefined ? undefined : Number(passesFlag)
+const baseline = baselineFlag === undefined ? undefined : Number(baselineFlag)
+const result = await runLoop({
+  image,
+  outDir,
+  seed: 1,
+  ...(passes === undefined ? {} : { passes }),
+  ...(baseline === undefined ? {} : { baseline }),
+})
 console.log(JSON.stringify(result))

@@ -45,7 +45,7 @@ export type LoopSuccess = {
     lastOutput: string
     history: ScoreRecord[]
     remainingMismatches: Mismatch[]
-    stopReason: "cap"
+    stopReason: "cap" | "threshold"
   }
   warnings: { code: string; message: string }[]
 }
@@ -273,7 +273,82 @@ export function labelFor(index: number, count: number, height: number, pageHeigh
   return "other"
 }
 
-export async function runLoop(options: { image: string; outDir: string; seed: number }): Promise<LoopSuccess> {
+function describeSection(input: {
+  raster: Raster
+  lines: OcrLine[]
+  ocrMissing: boolean
+  sourceHash: string
+  section: { id: string; label: string; color: string; ink: string; y: number; height: number; rgb: Rgb }
+}): IntermediateDescription {
+  const { raster, section } = input
+  const colors = [section.color, section.ink]
+  const fonts: string[] = []
+  const foundLines = sectionLines(input.lines, section.y, section.height)
+  const children =
+    foundLines.length > 0
+      ? foundLines.map((line, index) => {
+          const font = `${line.fontWeight} ${tenth(line.fontSize)}px ${line.fontFamily}`
+          const inkHex = textInk(raster, line, section.rgb)
+          return {
+            id: `${section.id}-t${String(index + 1).padStart(2, "0")}`,
+            kind: "text" as const,
+            text: line.text,
+            box: {
+              x: tenth(line.left),
+              y: tenth(Math.max(0, line.top - section.y)),
+              width: tenth(line.width),
+              height: tenth(line.height),
+            },
+            style: { color: `colors.${colorIndex(colors, inkHex)}`, fontFamily: `fonts.${fontIndex(fonts, font)}` },
+            children: [],
+            guesses: [{ field: "text", reason: "vision ocr", confidence: line.confidence }],
+          }
+        })
+      : [
+          {
+            id: `${section.id}-label`,
+            kind: "text" as const,
+            text: section.label,
+            box: { x: 0, y: 0, width: raster.width, height: 32 },
+            style: { color: "transparent" },
+            children: [],
+            guesses: [
+              {
+                field: "text",
+                reason: input.ocrMissing ? "vision unavailable" : "position label, not OCR",
+                confidence: 0.4,
+              },
+            ],
+          },
+        ]
+  return {
+    schemaVersion: 1,
+    sectionId: section.id,
+    source: {
+      imageHash: input.sourceHash,
+      bbox: { x: 0, y: section.y, width: raster.width, height: section.height },
+      width: raster.width,
+    },
+    tokens: { colors, spacing: [], fonts, radii: [] },
+    fontSubstitutions: [],
+    root: {
+      id: section.id,
+      kind: "box",
+      box: { x: 0, y: 0, width: raster.width, height: section.height },
+      style: { background: "colors.0", color: "colors.1" },
+      children,
+      guesses: [],
+    },
+  }
+}
+
+export async function runLoop(options: {
+  image: string
+  outDir: string
+  seed: number
+  passes?: number
+  baseline?: number
+}): Promise<LoopSuccess> {
   const bytes = await readFile(options.image)
   const raster = await readRaster(options.image)
   const ocr = await recognizeText(options.image)
@@ -306,66 +381,25 @@ export async function runLoop(options: { image: string; outDir: string; seed: nu
   await writeFile(path.join(root, "annotations.json"), JSON.stringify(annotations))
   await writeFile(path.join(root, "overlay.png"), overlay(raster, found))
   const history: ScoreRecord[] = []
+  const passCap = Math.max(1, options.passes ?? 1)
+  const finishedPasses: { id: string; passes: number; status: string }[] = []
+  let everySectionCleared = options.baseline !== undefined
   for (const section of sections) {
     const sectionDir = path.join(root, "sections", section.id)
-    const pass = path.join(sectionDir, "pass-1")
-    await mkdir(pass, { recursive: true })
+    await mkdir(sectionDir, { recursive: true })
     await writeFile(path.join(sectionDir, "source.png"), writePng(crop(raster, section.y, section.height)))
-    const colors = [section.color, section.ink]
-    const fonts: string[] = []
-    const foundLines = sectionLines(lines, section.y, section.height)
-    const children =
-      foundLines.length > 0
-        ? foundLines.map((line, index) => {
-            const font = `${line.fontWeight} ${tenth(line.fontSize)}px ${line.fontFamily}`
-            const inkHex = textInk(raster, line, section.rgb)
-            return {
-              id: `${section.id}-t${String(index + 1).padStart(2, "0")}`,
-              kind: "text" as const,
-              text: line.text,
-              box: {
-                x: tenth(line.left),
-                y: tenth(Math.max(0, line.top - section.y)),
-                width: tenth(line.width),
-                height: tenth(line.height),
-              },
-              style: { color: `colors.${colorIndex(colors, inkHex)}`, fontFamily: `fonts.${fontIndex(fonts, font)}` },
-              children: [],
-              guesses: [{ field: "text", reason: "vision ocr", confidence: line.confidence }],
-            }
-          })
-        : [
-            {
-              id: `${section.id}-label`,
-              kind: "text" as const,
-              text: section.label,
-              box: { x: 0, y: 0, width: raster.width, height: 32 },
-              style: { color: "transparent" },
-              children: [],
-              guesses: [
-                {
-                  field: "text",
-                  reason: ocr === null ? "vision unavailable" : "position label, not OCR",
-                  confidence: 0.4,
-                },
-              ],
-            },
-          ]
-    const intermediate = {
-      schemaVersion: 1,
-      sectionId: section.id,
-      source: { imageHash: sourceHash, bbox: { x: 0, y: section.y, width: raster.width, height: section.height }, width: raster.width },
-      tokens: { colors, spacing: [], fonts, radii: [] },
-      fontSubstitutions: [],
-      root: {
-        id: section.id,
-        kind: "box",
-        box: { x: 0, y: 0, width: raster.width, height: section.height },
-        style: { background: "colors.0", color: "colors.1" },
-        children,
-        guesses: [],
-      },
-    }
+    let completed = 0
+    let cleared = false
+    for (let passNumber = 1; passNumber <= passCap; passNumber += 1) {
+      const pass = path.join(sectionDir, `pass-${passNumber}`)
+      await mkdir(pass, { recursive: true })
+    const intermediate = describeSection({
+      raster,
+      lines,
+      ocrMissing: ocr === null,
+      sourceHash,
+      section,
+    })
     const intermediatePath = path.join(pass, "intermediate.json")
     await writeFile(intermediatePath, JSON.stringify(intermediate))
     const projectDir = path.join(pass, "project")
@@ -383,7 +417,7 @@ export async function runLoop(options: { image: string; outDir: string; seed: nu
     const embedded = sourceEmbedded(projectHtml)
     const score = {
       subject: { kind: "section" as const, id: section.id },
-      pass: 1,
+      pass: passNumber,
       components: sectionScore.components,
       combined: sectionScore.combined,
       gates: [
@@ -404,6 +438,14 @@ export async function runLoop(options: { image: string; outDir: string; seed: nu
     }
     await writeFile(path.join(pass, "score.json"), JSON.stringify(score))
     history.push(score)
+    completed = passNumber
+    if (options.baseline !== undefined && score.combined > options.baseline) {
+      cleared = true
+      break
+    }
+    }
+    if (!cleared) everySectionCleared = false
+    finishedPasses.push({ id: section.id, passes: completed, status: cleared ? "threshold" : "capped" })
   }
   const outDir = path.join(root, "out")
   await mkdir(outDir, { recursive: true })
@@ -476,7 +518,7 @@ export async function runLoop(options: { image: string; outDir: string; seed: nu
       input: { path: options.image, hash: sourceHash, width: raster.width, height: raster.height },
       seed: options.seed,
       toolVersion: "0.0.1",
-      sections: sections.map((section) => ({ id: section.id, status: "capped", passes: 1 })),
+      sections: finishedPasses,
     }),
   )
   return {
@@ -488,13 +530,177 @@ export async function runLoop(options: { image: string; outDir: string; seed: nu
       lastOutput: path.join(outDir, "index.html"),
       history,
       remainingMismatches: pageScore.mismatches,
-      stopReason: "cap",
+      stopReason: everySectionCleared ? "threshold" : "cap",
     },
     warnings: [
-      { code: "no-baseline", message: "No baseline combined score for this image, so the loop stopped after one pass." },
+      ...(options.baseline === undefined
+        ? [{ code: "no-baseline", message: "No baseline combined score for this image, so the loop stopped at the pass cap." }]
+        : []),
       ...(ocr === null
         ? [{ code: "vision-unavailable", message: "macOS Vision OCR did not run, so position labels were not painted as page text." }]
         : []),
     ],
+  }
+}
+
+export async function segmentImage(options: { image: string; outDir: string; review?: boolean }) {
+  const bytes = await readFile(options.image)
+  const raster = await readRaster(options.image)
+  const runId = createHash("sha256").update(bytes).digest("hex").slice(0, 12)
+  const root = path.join(options.outDir, "runs", runId)
+  const found = colorBands(raster)
+  const sections = found.map((band, index) => ({
+    id: `sec-${String(index + 1).padStart(2, "0")}`,
+    label: labelFor(index, found.length, band.height, raster.height),
+    ...band,
+  }))
+  await mkdir(root, { recursive: true })
+  const annotations = {
+    schemaVersion: 1,
+    source: {
+      hash: createHash("sha256").update(bytes).digest("hex"),
+      width: raster.width,
+      height: raster.height,
+    },
+    sections: sections.map((section, index) => ({
+      id: section.id,
+      bbox: { x: 0, y: section.y, width: raster.width, height: section.height },
+      label: section.label,
+      confidence: 0.4,
+      order: index + 1,
+    })),
+  }
+  await writeFile(path.join(root, "annotations.json"), JSON.stringify(annotations))
+  const overlayPath = path.join(root, "overlay.png")
+  await writeFile(overlayPath, overlay(raster, found))
+  for (const section of sections) {
+    const sectionDir = path.join(root, "sections", section.id)
+    await mkdir(sectionDir, { recursive: true })
+    await writeFile(path.join(sectionDir, "source.png"), writePng(crop(raster, section.y, section.height)))
+  }
+  return {
+    ok: true as const,
+    command: "segment" as const,
+    schemaVersion: 1 as const,
+    runId,
+    data: { annotations, overlay: overlayPath },
+    warnings: options.review
+      ? [{ code: "review", message: "Review annotations.json and overlay.png before generation." }]
+      : [],
+  }
+}
+
+export async function extractImage(options: { image: string; out: string }) {
+  const bytes = await readFile(options.image)
+  const raster = await readRaster(options.image)
+  const ocr = await recognizeText(options.image)
+  const found = colorBands(raster)
+  const band = found[0] ?? { y: 0, height: raster.height, rgb: { r: 0, g: 0, b: 0 } }
+  const section = {
+    id: "sec-01",
+    label: labelFor(0, 1, raster.height, raster.height),
+    color: hex(band.rgb),
+    ink: ink(band.rgb),
+    y: 0,
+    height: raster.height,
+    rgb: band.rgb,
+  }
+  const intermediate = describeSection({
+    raster,
+    lines: ocr ?? [],
+    ocrMissing: ocr === null,
+    sourceHash: createHash("sha256").update(bytes).digest("hex"),
+    section,
+  })
+  await mkdir(path.dirname(options.out), { recursive: true })
+  await writeFile(options.out, JSON.stringify(intermediate))
+  return {
+    ok: true as const,
+    command: "extract" as const,
+    schemaVersion: 1 as const,
+    runId: createHash("sha256").update(bytes).digest("hex").slice(0, 12),
+    data: { path: options.out, intermediate },
+    warnings: [],
+  }
+}
+
+export async function assembleRun(runDir: string) {
+  const manifest = JSON.parse(await readFile(path.join(runDir, "manifest.json"), "utf8")) as {
+    runId: string
+    input: { path: string; width: number; height: number }
+    seed: number
+  }
+  const annotations = JSON.parse(await readFile(path.join(runDir, "annotations.json"), "utf8")) as {
+    sections: { id: string }[]
+  }
+  const descriptions = await Promise.all(
+    annotations.sections.map(
+      async (section) =>
+        JSON.parse(
+          await readFile(path.join(runDir, "sections", section.id, "pass-1", "intermediate.json"), "utf8"),
+        ) as IntermediateDescription,
+    ),
+  )
+  const outDir = path.join(runDir, "out")
+  await mkdir(outDir, { recursive: true })
+  const trees = descriptions.map((description) => materializeNode(description.root, description.tokens))
+  const pageIntermediatePath = path.join(outDir, "intermediate.json")
+  await writeFile(
+    pageIntermediatePath,
+    JSON.stringify({
+      schemaVersion: 1,
+      sectionId: "page",
+      source: {
+        imageHash: "",
+        bbox: { x: 0, y: 0, width: manifest.input.width, height: manifest.input.height },
+        width: manifest.input.width,
+      },
+      tokens: { colors: [], spacing: [], fonts: [], radii: [] },
+      fontSubstitutions: [],
+      root: {
+        id: "page",
+        kind: "box",
+        box: { x: 0, y: 0, width: manifest.input.width, height: manifest.input.height },
+        children: descriptions.map((description) => description.root),
+        guesses: [],
+      },
+    }),
+  )
+  const pageHtmlPath = path.join(outDir, "index.html")
+  await writeFile(pageHtmlPath, pageHtml(manifest.input.width, trees))
+  await writeFile(path.join(outDir, "styles.css"), projectCss)
+  const pageScreenshotPath = path.join(outDir, "screenshot.png")
+  await renderHtmlPage({ html: pageHtmlPath, width: manifest.input.width, out: pageScreenshotPath })
+  const pageRasterScore = scoreRasters(await readRaster(manifest.input.path), await readRaster(pageScreenshotPath))
+  const pageEmbedded = sourceEmbedded(await readFile(pageHtmlPath, "utf8"))
+  const pageScore = {
+    subject: { kind: "page" as const, id: manifest.runId },
+    pass: 1,
+    components: pageRasterScore.components,
+    combined: pageRasterScore.combined,
+    gates: [
+      {
+        name: "source-not-embedded",
+        passed: !pageEmbedded,
+        detail: pageEmbedded ? "project HTML embeds an image" : "project HTML has no source image",
+      },
+    ],
+    mismatches: pageRasterScore.mismatches,
+    model: { name: "local-color-bands", version: "1" },
+    seed: manifest.seed,
+    scorerVersion: "2",
+    inputs: {
+      intermediateHash: createHash("sha256").update(await readFile(pageIntermediatePath)).digest("hex"),
+      screenshotHash: createHash("sha256").update(await readFile(pageScreenshotPath)).digest("hex"),
+    },
+  }
+  await writeFile(path.join(outDir, "score.json"), JSON.stringify(pageScore))
+  return {
+    ok: true as const,
+    command: "assemble" as const,
+    schemaVersion: 1 as const,
+    runId: manifest.runId,
+    data: { out: outDir, score: pageScore },
+    warnings: [],
   }
 }

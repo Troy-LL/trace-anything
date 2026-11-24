@@ -171,3 +171,51 @@ test("short ends are nav and footer and a tall second band is hero", async () =>
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+test("passes 2 writes pass-1 and pass-2", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "trace-passes-"))
+  const image = path.join(dir, "section.png")
+  await writeFile(image, stripePng(20, [{ height: 12, rgb: [255, 0, 0] }]))
+  try {
+    const result = await runLoop({ image, outDir: dir, seed: 1, passes: 2 })
+    assert.equal(result.data.stopReason, "cap")
+    const sectionDir = path.join(dir, "runs", result.runId, "sections", "sec-01")
+    for (const passName of ["pass-1", "pass-2"]) {
+      const pass = path.join(sectionDir, passName)
+      await readFile(path.join(pass, "intermediate.json"))
+      await readFile(path.join(pass, "screenshot.png"))
+      await readFile(path.join(pass, "score.json"))
+    }
+    const score = JSON.parse(
+      await readFile(path.join(sectionDir, "pass-2", "score.json"), "utf8"),
+    ) as ScoreRecord
+    assert.equal(score.pass, 2)
+    const manifest = JSON.parse(await readFile(path.join(dir, "runs", result.runId, "manifest.json"), "utf8")) as {
+      sections: { passes: number; status: string }[]
+    }
+    assert.equal(manifest.sections[0]?.passes, 2)
+    assert.equal(manifest.sections[0]?.status, "capped")
+    await readFile(path.join(dir, "runs", result.runId, "out", "score.json"))
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+test("baseline greater than combined stops before the pass cap", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "trace-baseline-"))
+  const image = path.join(dir, "section.png")
+  await writeFile(image, stripePng(20, [{ height: 12, rgb: [0, 128, 255] }]))
+  try {
+    const result = await runLoop({ image, outDir: dir, seed: 1, passes: 3, baseline: -1 })
+    assert.equal(result.data.stopReason, "threshold")
+    const sectionDir = path.join(dir, "runs", result.runId, "sections", "sec-01")
+    await readFile(path.join(sectionDir, "pass-1", "score.json"))
+    await assert.rejects(readFile(path.join(sectionDir, "pass-2", "score.json")))
+    assert.equal(
+      result.warnings.some((warning) => warning.code === "no-baseline"),
+      false,
+    )
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
