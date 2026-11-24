@@ -1,6 +1,6 @@
 # Security
 
-Trace Anything is at spec stage. There is no shipped server or CLI yet.
+Trace Anything has a local CLI. There is no shipped server.
 
 ## How to report
 
@@ -8,6 +8,6 @@ Please report a vulnerability through [GitHub private vulnerability reporting](h
 
 ## Planned surface
 
-When the CLI exists, it will only expose the documented commands: segment, extract, generate, render, score, loop, and assemble. It never runs arbitrary host commands. The optional two-tool MCP server, if it is built later, only searches and executes against that typed surface, in a sandbox. It must not grow into one tool per command, and it must not widen the surface past that typed API.
+The CLI exposes `loop`, `generate`, `render`, and `score`. It builds a section with Vite and, on macOS, compiles the Vision OCR helper in this repo. It does not take a user shell command. The optional two-tool MCP server, if it is built later, only searches and executes against that typed surface, in a sandbox. It must not grow into one tool per command, and it must not widen the surface past that typed API.
 
 Do not send secrets in issues, chat, or sample traces.
