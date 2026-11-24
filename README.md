@@ -134,7 +134,7 @@ The first version is done only when all four of these hold. The full list is in 
 - [ ] On the same fixed Design2Code slice, with the same model, the single-section loop beats screenshot-to-code on the combined metric. Results and scripts are committed so anyone can rerun them.
 - [ ] The ASES full-page example runs end to end: segment, review overlay, build every section in plain HTML/CSS/TS with Vite, assemble, and record the page-level score.
 - [ ] The same run works from the CLI and from an agent via the skills pack, with JSON in and out.
-- [ ] No image-as-background tricks. A product eval run of the fixed slice stays under $10, and each section stops after 3 passes. See [decision 005](docs/decisions/005-mvp-win-condition.md).
+- [ ] Text stays HTML. A non-text mark is its own crop. A CSS background, a data URI, or an image that covers the page does not count. A product eval run of the fixed slice stays under $10, and each section stops after 3 passes. See [decision 005](docs/decisions/005-mvp-win-condition.md).
 
 <details>
 <summary>Under the hood</summary>

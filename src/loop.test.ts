@@ -5,8 +5,8 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import test from "node:test"
 import zlib from "node:zlib"
-import { readRaster } from "./decode.ts"
-import { generateProject, runLoop } from "./loop.ts"
+import { readRaster, type Raster } from "./decode.ts"
+import { generateProject, graphicBoxes, linesOutsideMarks, runLoop } from "./loop.ts"
 import type { IntermediateDescription, ScoreRecord } from "./records.ts"
 
 function chunk(type: string, data: Buffer): Buffer {
@@ -49,6 +49,61 @@ function stripePng(width: number, bands: { height: number; rgb: [number, number,
     chunk("IEND", Buffer.alloc(0)),
   ])
 }
+
+function paintedRaster(
+  width: number,
+  height: number,
+  fill: [number, number, number],
+  mark: { x: number; y: number; width: number; height: number; rgb: [number, number, number] },
+): Raster {
+  const data = new Uint8Array(width * height * 4)
+  for (let i = 0; i < width * height; i += 1) {
+    data[i * 4] = fill[0]
+    data[i * 4 + 1] = fill[1]
+    data[i * 4 + 2] = fill[2]
+    data[i * 4 + 3] = 255
+  }
+  for (let y = mark.y; y < mark.y + mark.height; y += 1) {
+    for (let x = mark.x; x < mark.x + mark.width; x += 1) {
+      const pixel = (y * width + x) * 4
+      data[pixel] = mark.rgb[0]
+      data[pixel + 1] = mark.rgb[1]
+      data[pixel + 2] = mark.rgb[2]
+    }
+  }
+  return { width, height, data }
+}
+
+test("graphic boxes crop a mark and skip text", () => {
+  const raster = paintedRaster(30, 30, [255, 255, 255], {
+    x: 8,
+    y: 8,
+    width: 10,
+    height: 10,
+    rgb: [0, 0, 0],
+  })
+  const boxes = graphicBoxes(raster, { r: 255, g: 255, b: 255 }, [])
+  assert.equal(boxes.length, 1)
+  const box = boxes[0]
+  assert.ok(box)
+  assert.ok(box.x <= 8 && box.y <= 8)
+  assert.ok(box.x + box.width >= 18 && box.y + box.height >= 18)
+  assert.ok(box.width * box.height < 30 * 30 * 0.5)
+  assert.deepEqual(graphicBoxes(raster, { r: 255, g: 255, b: 255 }, [{ x: 8, y: 8, width: 10, height: 10 }]), [])
+  assert.deepEqual(graphicBoxes(raster, { r: 255, g: 255, b: 255 }, [{ x: 10, y: 10, width: 6, height: 6 }]), [])
+})
+
+test("a line inside a crop is not drawn again", () => {
+  const mark = { x: 8, y: 8, width: 20, height: 12 }
+  const kept = linesOutsideMarks(
+    [
+      { x: 10, y: 10, width: 8, height: 8 },
+      { x: 40, y: 40, width: 8, height: 8 },
+    ],
+    [mark],
+  )
+  assert.deepEqual(kept, [{ x: 40, y: 40, width: 8, height: 8 }])
+})
 
 test("loop writes a page from color bands and does not embed the source", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "trace-loop-"))

@@ -89,7 +89,20 @@ function textScore(source: Raster, shot: Raster): number {
 }
 
 export function sourceEmbedded(html: string): boolean {
-  return /background-image\s*:/i.test(html) || /data:image\//i.test(html)
+  if (/background-image\s*:/i.test(html) || /data:image\//i.test(html)) return true
+  const bodyWidth = Number(/<body[^>]*style="[^"]*width:(\d+(?:\.\d+)?)px/.exec(html)?.[1] ?? 0)
+  const pageHeight = [...html.matchAll(/<section\b[^>]*style="[^"]*height:(\d+(?:\.\d+)?)px/g)].reduce(
+    (sum, match) => sum + Number(match[1]),
+    0,
+  )
+  if (bodyWidth === 0 || pageHeight === 0) return false
+  for (const match of html.matchAll(/<img\b[^>]*style="([^"]*)"/g)) {
+    const style = match[1] ?? ""
+    const width = Number(/width:(\d+(?:\.\d+)?)px/.exec(style)?.[1] ?? 0)
+    const height = Number(/height:(\d+(?:\.\d+)?)px/.exec(style)?.[1] ?? 0)
+    if (width >= bodyWidth * 0.9 && height >= pageHeight * 0.9) return true
+  }
+  return false
 }
 
 export function scoreRasters(source: Raster, shot: Raster): RasterScore {

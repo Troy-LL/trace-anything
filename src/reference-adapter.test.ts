@@ -1,10 +1,10 @@
 import assert from "node:assert/strict"
 import { spawn } from "node:child_process"
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import test from "node:test"
-import { writeReferenceProject } from "./reference-adapter.ts"
+import { pageHtml, writeReferenceProject } from "./reference-adapter.ts"
 
 const packageRoot = path.resolve(import.meta.dirname, "..")
 
@@ -69,6 +69,70 @@ test("reference adapter vite build emits fixture heading without background-imag
     assert.equal(html.includes("background-image"), false)
     const css = await readFile(path.join(project, "styles.css"), "utf8")
     assert.match(css, /border-box/)
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+test("an image node is a positioned crop file", () => {
+  const html = pageHtml(80, [
+    {
+      id: "sec",
+      kind: "box",
+      box: { x: 0, y: 0, width: 80, height: 40 },
+      style: { background: "#ffffff", color: "#000000" },
+      children: [
+        {
+          id: "g1",
+          kind: "image",
+          box: { x: 4, y: 6, width: 12, height: 12 },
+          style: { src: "./crops/g1.png" },
+          children: [],
+        },
+      ],
+    },
+  ])
+  assert.match(html, /<img[^>]*src="\.\/crops\/g1\.png"/)
+  assert.match(html, /width:12px/)
+  assert.match(html, /height:12px/)
+  assert.equal(html.includes("background-image"), false)
+})
+
+test("the adapter copies a crop into the built project", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "trace-crop-"))
+  const intermediate = path.join(dir, "intermediate.json")
+  const project = path.join(dir, "project")
+  const description = {
+    schemaVersion: 1,
+    sectionId: "sec-crop",
+    source: { imageHash: "abc", bbox: { x: 0, y: 0, width: 40, height: 40 }, width: 40 },
+    tokens: { colors: ["#ffffff", "#000000"], spacing: [], fonts: [], radii: [] },
+    fontSubstitutions: [],
+    root: {
+      id: "sec-crop",
+      kind: "box",
+      box: { x: 0, y: 0, width: 40, height: 40 },
+      style: { background: "colors.0", color: "colors.1" },
+      children: [
+        {
+          id: "g1",
+          kind: "image",
+          box: { x: 4, y: 4, width: 10, height: 10 },
+          style: { src: "./crops/g1.png" },
+          children: [],
+        },
+      ],
+    },
+  }
+  try {
+    await mkdir(path.join(dir, "crops"), { recursive: true })
+    await writeFile(path.join(dir, "crops", "g1.png"), Buffer.from([1, 2, 3, 4]))
+    await writeFile(intermediate, JSON.stringify(description))
+    await writeReferenceProject(intermediate, project)
+    const copied = await readFile(path.join(project, "public", "crops", "g1.png"))
+    assert.deepEqual([...copied], [1, 2, 3, 4])
+    const html = await readFile(path.join(project, "index.html"), "utf8")
+    assert.match(html, /src="\.\/crops\/g1\.png"/)
   } finally {
     await rm(dir, { recursive: true, force: true })
   }

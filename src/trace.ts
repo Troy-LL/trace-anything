@@ -126,8 +126,8 @@ if (command === "score") {
               htmlPath === undefined
                 ? "html not provided"
                 : embedded
-                  ? "project HTML embeds an image"
-                  : "project HTML has no source image",
+                  ? "an image covers the page"
+                  : "no image covers the page",
           },
         ],
         mismatches: rasterScore.mismatches,

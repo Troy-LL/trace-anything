@@ -1,0 +1,137 @@
+{
+  "date": "2026-11-24",
+  "scorerVersion": "2",
+  "note": "Fidelity is an auditor grade of small details, from 0 to 10. Combined is the measured score. Text is ink overlap, so a high text score can still hide a misread.",
+  "pages": [
+    {
+      "page": "cloudflare",
+      "runId": "ef7495dc3013",
+      "combined": 0.954,
+      "text": 0.888,
+      "fidelity": 7,
+      "dominant": "The orange dot grid goes flat, and the display letters move."
+    },
+    {
+      "page": "vercel",
+      "runId": "071d168dc7f1",
+      "combined": 0.969,
+      "text": 0.922,
+      "fidelity": 8,
+      "dominant": "The headline letters move. The text also emits OpenAl, Resources y, and 00 Meta."
+    },
+    {
+      "page": "shadcn",
+      "runId": "c84fbc787fec",
+      "combined": 0.922,
+      "text": 0.928,
+      "fidelity": 6,
+      "dominant": "The black Get Started button is unfilled. A headline letter sits on the gray page instead of the white card."
+    },
+    {
+      "page": "d2c-171",
+      "runId": "21128d8f21d7",
+      "combined": 0.964,
+      "text": 0.896,
+      "fidelity": 7,
+      "dominant": "Body copy is misread, and the letters in the zoom are shifted."
+    },
+    {
+      "page": "d2c-438",
+      "runId": "37a264d84686",
+      "combined": 0.922,
+      "text": 0.722,
+      "fidelity": 6,
+      "dominant": "Dire is the right word, shifted up so the D is clipped."
+    },
+    {
+      "page": "ases",
+      "runId": "ec18ea2bf460",
+      "combined": 0.665,
+      "text": 0.117,
+      "fidelity": 2,
+      "dominant": "A navy-over-white region becomes one flat blue band spelling othe."
+    }
+  ],
+  "defects": [
+    {
+      "page": "cloudflare",
+      "x": 240,
+      "y": 320,
+      "source": "Orange field with a grid of lighter squares, and large white curves.",
+      "trace": "Flat orange, and a % lower than those curves.",
+      "fix": ["missing-texture", "glyph-shift"]
+    },
+    {
+      "page": "cloudflare",
+      "x": 760,
+      "y": 360,
+      "source": "A full white u on the dotted orange.",
+      "trace": "Flat orange, and only the bottom of the u along the top edge of the tile.",
+      "fix": ["missing-texture", "glyph-shift"]
+    },
+    {
+      "page": "vercel",
+      "x": 160,
+      "y": 360,
+      "source": "The crossbar and hooked foot of a t, then the r.",
+      "trace": "Only the lower parts of those letters along the top edge.",
+      "fix": ["glyph-shift"]
+    },
+    {
+      "page": "vercel",
+      "x": 0,
+      "y": 280,
+      "source": "Only the right leg of an A in the corner.",
+      "trace": "A full A.",
+      "fix": ["glyph-shift"]
+    },
+    {
+      "page": "shadcn",
+      "x": 520,
+      "y": 320,
+      "source": "A black rounded button with white Get S.",
+      "trace": "Black Get S on light gray, no button.",
+      "fix": ["missing-fill"]
+    },
+    {
+      "page": "shadcn",
+      "x": 360,
+      "y": 200,
+      "source": "A black u on white.",
+      "trace": "The same u higher, on light gray.",
+      "fix": ["glyph-shift"]
+    },
+    {
+      "page": "d2c-171",
+      "x": 320,
+      "y": 200,
+      "source": "Dark na.",
+      "trace": "The a and a leftover stem, higher and to the left, with the n mostly out of the tile.",
+      "fix": ["glyph-shift"]
+    },
+    {
+      "page": "d2c-438",
+      "x": 640,
+      "y": 120,
+      "source": "Dire.",
+      "trace": "The same word higher, D cut by the tile edge.",
+      "fix": ["glyph-shift"]
+    },
+    {
+      "page": "ases",
+      "x": 0,
+      "y": 720,
+      "source": "Solid navy over white, no letters.",
+      "trace": "One flat blue field with white othe.",
+      "fix": ["flat-band"]
+    }
+  ],
+  "misreads": {
+    "cloudflare": ["Products C", "Solutions o", "Resources Pricing", "stray Q", "headline dash is a hyphen"],
+    "vercel": ["Resources y", "00 Meta", "OpenAl", "The split from weather"],
+    "shadcn": ["Al Elements", "Contribution Histor", "Button Groun", "vour device", "stray a", "Home joined to Docs"],
+    "d2c-171": ["ThIs section provides additional information aboucincelicnares reacures", "chem", "Detalled intormation", "64-DiC", "trailing hero"],
+    "ases": ["nav/header", "other repeated", "footer"]
+  },
+  "fixOrder": ["glyph-shift", "ocr-misread", "flat-band"]
+}

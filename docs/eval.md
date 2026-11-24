@@ -32,7 +32,7 @@ node --experimental-strip-types scripts/baseline.ts --confirm-spend 10
 
 ## Local probe
 
-This is not the official baseline. screenshot-to-code and v0 were not run. The product scorer compared a trace to the source image. `combined` is the mean of perceptual similarity, row-luma layout, ink-pixel text overlap, and 16px-block color. Text allows a few pixels of shift. The source image was not embedded. Dated numbers are in `evals/2026-11-24-local-comparison.json`.
+This is not the official baseline. screenshot-to-code and v0 were not run. The product scorer compared a trace to the source image. `combined` is the mean of perceptual similarity, row-luma layout, ink-pixel text overlap, and 16px-block color. Text allows a few pixels of shift. The source image was not embedded. Dated numbers are in `evals/2026-11-24-local-comparison.json`. The pass audit is in `evals/2026-11-24-pass-audit.json`.
 
 | id | method | combined | text |
 | --- | --- | --- | --- |
@@ -65,9 +65,9 @@ Until `trace eval` exists, baseline scripts committed for the issue #1 run are t
 
 ## Scoring honesty
 
-**Stance.** Image-as-background, and any embedding of the source image in the output, are banned. Perceptual similarity, layout, text, and color are stored separately, as well as the combined metric. A close-looking screenshot that cheats does not count. See [decision 005](decisions/005-mvp-win-condition.md).
+**Stance.** Text stays HTML. A non-text mark may be a crop of that mark. A CSS background, a data URI, or an image whose box covers the page does not count. The check fails those three. Perceptual similarity, layout, text, and color are stored separately, as well as the combined metric. A close-looking screenshot that cheats does not count. See [decision 005](decisions/005-mvp-win-condition.md).
 
-**Open questions.** How is an embedded source image detected automatically? Are the official Design2Code metrics enough, or is a dedicated cheat check required?
+**Open questions.** Are the official Design2Code metrics enough, or is a dedicated cheat check required beyond the page-cover check?
 
 ## Cost and speed
 

@@ -4,7 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { readRaster, writePng, type Raster } from "./decode.ts"
 import { recognizeText, type OcrLine } from "./ocr.ts"
-import { generateProject, materializeNode, pageHtml, projectCss } from "./reference-adapter.ts"
+import { copyCrops, generateProject, materializeNode, pageHtml, projectCss } from "./reference-adapter.ts"
 import type { IntermediateDescription, Mismatch, ScoreRecord } from "./records.ts"
 import { renderBuiltPage, renderHtmlPage } from "./render.ts"
 import { scoreRasters, sourceEmbedded } from "./score.ts"
@@ -91,6 +91,123 @@ function distance(a: Rgb, b: Rgb): number {
   return Math.sqrt(dr * dr + dg * dg + db * db)
 }
 
+type MarkBox = { x: number; y: number; width: number; height: number }
+
+function unionBox(a: MarkBox, b: MarkBox): MarkBox {
+  const x = Math.min(a.x, b.x)
+  const y = Math.min(a.y, b.y)
+  return {
+    x,
+    y,
+    width: Math.max(a.x + a.width, b.x + b.width) - x,
+    height: Math.max(a.y + a.height, b.y + b.height) - y,
+  }
+}
+
+export function linesOutsideMarks(lines: MarkBox[], marks: MarkBox[]): MarkBox[] {
+  return lines.filter((line) => marks.every((mark) => gapBetween(line, mark) > 0))
+}
+
+function gapBetween(a: MarkBox, b: MarkBox): number {
+  const dx = Math.max(0, Math.max(a.x, b.x) - Math.min(a.x + a.width, b.x + b.width))
+  const dy = Math.max(0, Math.max(a.y, b.y) - Math.min(a.y + a.height, b.y + b.height))
+  return Math.max(dx, dy)
+}
+
+function mergeNear(boxes: MarkBox[], gap: number): MarkBox[] {
+  let current = boxes
+  let changed = true
+  while (changed) {
+    changed = false
+    const next: MarkBox[] = []
+    const used = new Array<boolean>(current.length).fill(false)
+    for (let i = 0; i < current.length; i += 1) {
+      if (used[i]) continue
+      let box = current[i]
+      if (!box) continue
+      used[i] = true
+      for (let j = i + 1; j < current.length; j += 1) {
+        const other = current[j]
+        if (used[j] || !other) continue
+        if (gapBetween(box, other) > gap) continue
+        box = unionBox(box, other)
+        used[j] = true
+        changed = true
+      }
+      next.push(box)
+    }
+    current = next
+  }
+  return current
+}
+
+function padBox(box: MarkBox, pad: number, width: number, height: number): MarkBox {
+  const x = Math.max(0, box.x - pad)
+  const y = Math.max(0, box.y - pad)
+  const right = Math.min(width, box.x + box.width + pad)
+  const bottom = Math.min(height, box.y + box.height + pad)
+  return { x, y, width: right - x, height: bottom - y }
+}
+
+export function graphicBoxes(raster: Raster, fill: Rgb, textBoxes: MarkBox[]): MarkBox[] {
+  const { width, height, data } = raster
+  const mask = new Uint8Array(width * height)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const inText = textBoxes.some((box) => {
+        const grown = padBox(box, Math.max(8, box.height * 0.4), width, height)
+        return x >= grown.x && y >= grown.y && x < grown.x + grown.width && y < grown.y + grown.height
+      })
+      if (inText) continue
+      const pixel = (y * width + x) * 4
+      const sample = { r: data[pixel] ?? 0, g: data[pixel + 1] ?? 0, b: data[pixel + 2] ?? 0 }
+      if (distance(sample, fill) > 36) mask[y * width + x] = 1
+    }
+  }
+  const seen = new Uint8Array(width * height)
+  const boxes: MarkBox[] = []
+  const stack: number[] = []
+  for (let start = 0; start < mask.length; start += 1) {
+    if (mask[start] !== 1 || seen[start]) continue
+    let minX = width
+    let minY = height
+    let maxX = 0
+    let maxY = 0
+    let area = 0
+    stack.push(start)
+    seen[start] = 1
+    while (stack.length > 0) {
+      const index = stack.pop()
+      if (index === undefined) break
+      const x = index % width
+      const y = (index - x) / width
+      area += 1
+      if (x < minX) minX = x
+      if (y < minY) minY = y
+      if (x > maxX) maxX = x
+      if (y > maxY) maxY = y
+      const neighbors = [
+        x > 0 ? index - 1 : -1,
+        x + 1 < width ? index + 1 : -1,
+        index - width,
+        index + width,
+      ]
+      for (const next of neighbors) {
+        if (next < 0 || next >= mask.length || mask[next] !== 1 || seen[next]) continue
+        seen[next] = 1
+        stack.push(next)
+      }
+    }
+    if (area >= 8) boxes.push({ x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 })
+  }
+  return mergeNear(boxes, 6)
+    .filter((box) => {
+      const area = box.width * box.height
+      return area >= 16 && area <= width * height * 0.85
+    })
+    .map((box) => padBox(box, 1, width, height))
+}
+
 function blend(mean: Rgb, sample: Rgb, count: number): Rgb {
   return {
     r: (mean.r * (count - 1) + sample.r) / count,
@@ -174,6 +291,23 @@ function crop(raster: Raster, y: number, height: number): Raster {
   const start = y * raster.width * 4
   data.set(raster.data.subarray(start, start + data.length))
   return { width: raster.width, height, data }
+}
+
+async function writeCropFiles(dir: string, crops: { name: string; png: Buffer }[]): Promise<void> {
+  if (crops.length === 0) return
+  await mkdir(dir, { recursive: true })
+  for (const file of crops) {
+    await writeFile(path.join(dir, file.name), file.png)
+  }
+}
+
+function cropRect(raster: Raster, box: MarkBox): Raster {
+  const data = new Uint8Array(box.width * box.height * 4)
+  for (let y = 0; y < box.height; y += 1) {
+    const start = ((box.y + y) * raster.width + box.x) * 4
+    data.set(raster.data.subarray(start, start + box.width * 4), y * box.width * 4)
+  }
+  return { width: box.width, height: box.height, data }
 }
 
 function overlay(raster: Raster, sections: Band[]): Buffer {
@@ -279,14 +413,48 @@ function describeSection(input: {
   ocrMissing: boolean
   sourceHash: string
   section: { id: string; label: string; color: string; ink: string; y: number; height: number; rgb: Rgb }
-}): IntermediateDescription {
+}): { intermediate: IntermediateDescription; crops: { name: string; png: Buffer }[] } {
   const { raster, section } = input
   const colors = [section.color, section.ink]
   const fonts: string[] = []
   const foundLines = sectionLines(input.lines, section.y, section.height)
-  const children =
-    foundLines.length > 0
-      ? foundLines.map((line, index) => {
+  const sectionRaster = crop(raster, section.y, section.height)
+  const marks = graphicBoxes(
+    sectionRaster,
+    section.rgb,
+    foundLines.map((line) => ({
+      x: line.left,
+      y: Math.max(0, line.top - section.y),
+      width: line.width,
+      height: line.height,
+    })),
+  )
+  const crops = marks.map((box, index) => {
+    const id = `${section.id}-g${String(index + 1).padStart(2, "0")}`
+    return { id, box, name: `${id}.png`, png: writePng(cropRect(sectionRaster, box)) }
+  })
+  const images = crops.map((cropFile) => ({
+    id: cropFile.id,
+    kind: "image" as const,
+    box: cropFile.box,
+    style: { src: `./crops/${cropFile.name}` },
+    children: [],
+    guesses: [{ field: "box", reason: "cropped source region", confidence: 0.8 }],
+  }))
+  const visibleLines = linesOutsideMarks(
+    foundLines.map((line) => ({
+      x: line.left,
+      y: Math.max(0, line.top - section.y),
+      width: line.width,
+      height: line.height,
+      line,
+    })),
+    marks,
+  )
+  const textNodes =
+    visibleLines.length > 0
+      ? visibleLines.map((entry, index) => {
+          const line = entry.line
           const font = `${line.fontWeight} ${tenth(line.fontSize)}px ${line.fontFamily}`
           const inkHex = textInk(raster, line, section.rgb)
           return {
@@ -322,6 +490,8 @@ function describeSection(input: {
           },
         ]
   return {
+    crops: crops.map((cropFile) => ({ name: cropFile.name, png: cropFile.png })),
+    intermediate: {
     schemaVersion: 1,
     sectionId: section.id,
     source: {
@@ -336,9 +506,10 @@ function describeSection(input: {
       kind: "box",
       box: { x: 0, y: 0, width: raster.width, height: section.height },
       style: { background: "colors.0", color: "colors.1" },
-      children,
+      children: [...images, ...textNodes],
       guesses: [],
     },
+  },
   }
 }
 
@@ -393,15 +564,17 @@ export async function runLoop(options: {
     for (let passNumber = 1; passNumber <= passCap; passNumber += 1) {
       const pass = path.join(sectionDir, `pass-${passNumber}`)
       await mkdir(pass, { recursive: true })
-    const intermediate = describeSection({
+    const described = describeSection({
       raster,
       lines,
       ocrMissing: ocr === null,
       sourceHash,
       section,
     })
+    const intermediate = described.intermediate
     const intermediatePath = path.join(pass, "intermediate.json")
     await writeFile(intermediatePath, JSON.stringify(intermediate))
+    await writeCropFiles(path.join(pass, "crops"), described.crops)
     const projectDir = path.join(pass, "project")
     await generateProject(intermediatePath, projectDir)
     await runViteBuild(projectDir)
@@ -424,7 +597,7 @@ export async function runLoop(options: {
         {
           name: "source-not-embedded",
           passed: !embedded,
-          detail: embedded ? "project HTML embeds an image" : "project HTML has no source image",
+          detail: embedded ? "an image covers the page" : "no image covers the page",
         },
       ],
       mismatches: sectionScore.mismatches,
@@ -477,6 +650,9 @@ export async function runLoop(options: {
     },
   }
   await writeFile(pageIntermediatePath, JSON.stringify(pageIntermediate))
+  for (const section of sections) {
+    await copyCrops(path.join(root, "sections", section.id, "pass-1", "crops"), path.join(outDir, "crops"))
+  }
   await writeFile(path.join(outDir, "index.html"), pageHtml(raster.width, trees))
   await writeFile(path.join(outDir, "styles.css"), projectCss)
   const pageHtmlPath = path.join(outDir, "index.html")
@@ -497,7 +673,7 @@ export async function runLoop(options: {
       {
         name: "source-not-embedded",
         passed: !pageEmbedded,
-        detail: pageEmbedded ? "project HTML embeds an image" : "project HTML has no source image",
+        detail: pageEmbedded ? "an image covers the page" : "no image covers the page",
       },
     ],
     mismatches: pageRasterScore.mismatches,
@@ -605,15 +781,17 @@ export async function extractImage(options: { image: string; out: string }) {
     height: raster.height,
     rgb: band.rgb,
   }
-  const intermediate = describeSection({
+  const described = describeSection({
     raster,
     lines: ocr ?? [],
     ocrMissing: ocr === null,
     sourceHash: createHash("sha256").update(bytes).digest("hex"),
     section,
   })
+  const intermediate = described.intermediate
   await mkdir(path.dirname(options.out), { recursive: true })
   await writeFile(options.out, JSON.stringify(intermediate))
+  await writeCropFiles(path.join(path.dirname(options.out), "crops"), described.crops)
   return {
     ok: true as const,
     command: "extract" as const,
@@ -666,6 +844,9 @@ export async function assembleRun(runDir: string) {
       },
     }),
   )
+  for (const section of annotations.sections) {
+    await copyCrops(path.join(runDir, "sections", section.id, "pass-1", "crops"), path.join(outDir, "crops"))
+  }
   const pageHtmlPath = path.join(outDir, "index.html")
   await writeFile(pageHtmlPath, pageHtml(manifest.input.width, trees))
   await writeFile(path.join(outDir, "styles.css"), projectCss)
@@ -682,7 +863,7 @@ export async function assembleRun(runDir: string) {
       {
         name: "source-not-embedded",
         passed: !pageEmbedded,
-        detail: pageEmbedded ? "project HTML embeds an image" : "project HTML has no source image",
+        detail: pageEmbedded ? "an image covers the page" : "no image covers the page",
       },
     ],
     mismatches: pageRasterScore.mismatches,

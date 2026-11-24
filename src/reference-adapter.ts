@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import type { IntermediateNode } from "./records.ts"
 
@@ -60,8 +60,11 @@ function renderNode(node: RenderNode, tokens: ColorTokens | undefined, nested: b
       return place(node, `<a href="#">${text}</a>`, tokens)
     case "control":
       return place(node, `<button type="button">${text}</button>`, tokens)
-    case "image":
-      return ""
+    case "image": {
+      const src = node.style?.src
+      if (!src) return ""
+      return `<img alt="" src="${escapeText(src)}" style="position:absolute;left:${node.box.x}px;top:${node.box.y}px;width:${node.box.width}px;height:${node.box.height}px">`
+    }
     case "box": {
       const inner = node.children.map((child) => renderNode(child as RenderNode, tokens, true)).join("")
       const rawBackground = node.style?.background ?? "transparent"
@@ -135,9 +138,26 @@ type IntermediateFile = {
   root: IntermediateNode
 }
 
+export async function copyCrops(fromDir: string, toDir: string): Promise<void> {
+  let names: string[]
+  try {
+    names = await readdir(fromDir)
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return
+    throw error
+  }
+  const pngs = names.filter((name) => name.endsWith(".png"))
+  if (pngs.length === 0) return
+  await mkdir(toDir, { recursive: true })
+  for (const name of pngs) {
+    await copyFile(path.join(fromDir, name), path.join(toDir, name))
+  }
+}
+
 export async function writeReferenceProject(intermediatePath: string, projectDir: string): Promise<void> {
   const description = JSON.parse(await readFile(intermediatePath, "utf8")) as IntermediateFile
   await mkdir(projectDir, { recursive: true })
+  await copyCrops(path.join(path.dirname(intermediatePath), "crops"), path.join(projectDir, "public", "crops"))
   await writeFile(
     path.join(projectDir, "index.html"),
     projectIndexHtml(description.source.width, [description.root], description.tokens),

@@ -77,7 +77,7 @@ Each cropped section then follows the loop below. After every section has been s
 6. The score record's mismatches feed the next generate.
 7. `trace loop` repeats from generate until `combined` clears that crop's baseline `combined`, or 3 passes. Each repeat is a new pass with its own files. The slice wins when its average `combined` is higher than the baseline slice average.
 
-The scoring loop does not change per stack. Only the adapter's emitted code changes. Output must not embed the source image, including as a CSS background. Repeated extract and score work is cached. The cache key is the input bytes, the command, its params, the model name and version, the seed, and the tool version. A cache write is a temp file renamed into place. Reruns are seeded.
+The scoring loop does not change per stack. Only the adapter's emitted code changes. Output must not cover the page with the source image or use it as a CSS background. A non-text mark may be its own crop. Repeated extract and score work is cached. The cache key is the input bytes, the command, its params, the model name and version, the seed, and the tool version. A cache write is a temp file renamed into place. Reruns are seeded.
 
 ## Models
 
@@ -124,5 +124,5 @@ The adapter interface is documented in code when adapters ship. The MVP adapter 
 - It does not take a multi-page site or Figma input in v0.1.
 - It does not include a graphical product UI in v0.1, and it does not include an interactive GUI editor for annotations.
 - It does not run arbitrary host commands through the CLI. The optional MCP server, if present, only searches and executes against the typed library surface, in a sandbox.
-- It does not embed the source image in the output, including as a background.
+- It does not cover the page with the source image, and it does not use the source as a CSS background. A non-text mark may be its own crop.
 - It does not redistribute third-party logos.

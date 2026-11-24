@@ -105,4 +105,10 @@ test("embedded image markup fails the source gate", () => {
   assert.equal(sourceEmbedded('<section style="background:#fff"></section>'), false)
   assert.equal(sourceEmbedded('background-image:url("shot.png")'), true)
   assert.equal(sourceEmbedded('<img src="data:image/png;base64,aaaa">'), true)
+  const crop =
+    '<body style="width:100px"><section style="height:80px"><img alt="" src="./crops/mark.png" style="position:absolute;left:4px;top:6px;width:12px;height:12px"></section></body>'
+  const page =
+    '<body style="width:100px"><section style="height:80px"><img alt="" src="./crops/all.png" style="position:absolute;left:0px;top:0px;width:100px;height:80px"></section></body>'
+  assert.equal(sourceEmbedded(crop), false)
+  assert.equal(sourceEmbedded(page), true)
 })
