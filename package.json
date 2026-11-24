@@ -3,7 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --experimental-strip-types --test scripts/baseline.test.ts",
-    "baseline:dry": "node --experimental-strip-types scripts/baseline.ts --dry-run"
+    "test": "node --experimental-strip-types --test scripts/baseline.test.ts src/score.test.ts src/loop.test.ts src/records.test.ts src/reference-adapter.test.ts src/render.test.ts src/trace.test.ts",
+    "baseline:dry": "node --experimental-strip-types scripts/baseline.ts --dry-run",
+    "trace": "node --experimental-strip-types src/trace.ts"
+  },
+  "dependencies": {
+    "jpeg-js": "^0.4.4",
+    "playwright": "^1.49.1",
+    "pngjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "vite": "^6.4.6"
   }
 }
